@@ -58,7 +58,7 @@ function TrialExpiredScreen({ email }) {
         </p>
 
         <a
-          href={`mailto:${email}?subject=Licencia Mi Negocio&body=Hola, quiero adquirir la licencia completa de Mi Negocio.`}
+          href={`mailto:${email}?subject=App-Mi-Negocio&body=Hola Brian, quiero comprar la licencia completa de Mi Negocio.`}
           style={{
             display: 'inline-flex', alignItems: 'center', gap: 10,
             background: 'linear-gradient(135deg, #4facfe, #00f2fe)',
@@ -114,7 +114,7 @@ function TrialBanner({ daysLeft, email }) {
           <br />
           <strong style={{ color: '#4facfe' }}>{email}</strong>
           <br />
-          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Asunto: <em>Compra app</em></span>
+          <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 11 }}>Asunto: <em>App-Mi-Negocio</em></span>
         </div>
       )}
 

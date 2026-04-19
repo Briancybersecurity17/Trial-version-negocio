@@ -21,6 +21,7 @@ import Inventario from './pages/Inventario';
 import Mermas from './pages/Mermas';
 import Opciones from './pages/Opciones';
 import Account from './pages/Account';
+import TrialGuard from './TrialGuard';
 
 // Rutas protegidas: redirige al login si no está autenticado
 function ProtectedRoute({ children }) {
@@ -69,17 +70,19 @@ function AppRoutes() {
 
 function App() {
   return (
-    <AuthProvider>
-      <ThemeProvider>
-        <LanguageProvider>
-          <QueryClientProvider client={queryClientInstance}>
-            <AppRoutes />
-            <Toaster />
-            <SonnerToaster richColors position="top-right" />
-          </QueryClientProvider>
-        </LanguageProvider>
-      </ThemeProvider>
-    </AuthProvider>
+    <TrialGuard>
+      <AuthProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <QueryClientProvider client={queryClientInstance}>
+              <AppRoutes />
+              <Toaster />
+              <SonnerToaster richColors position="top-right" />
+            </QueryClientProvider>
+          </LanguageProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </TrialGuard>
   )
 }
 

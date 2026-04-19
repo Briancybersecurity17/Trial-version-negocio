@@ -36,3 +36,7 @@ contextBridge.exposeInMainWorld('electronFiles', {
   openImage: () => ipcRenderer.invoke('dialog:openImageFile'),
 });
 
+
+contextBridge.exposeInMainWorld('electronTrial', {
+  status: () => ipcRenderer.invoke('trial:status'),
+});

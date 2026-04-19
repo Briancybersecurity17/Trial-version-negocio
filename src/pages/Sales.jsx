@@ -1,27 +1,41 @@
+import { fmtMoneda } from "@/utils/currency";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
-import { Search, Receipt, Calendar as CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, Receipt, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle } from "lucide-react";
 import moment from "moment";
 import { useLanguage } from "@/lib/LanguageContext";
+import { useTheme } from "@/lib/ThemeContext";
+import { toast } from "sonner";
+import { useAuth } from "@/lib/AuthContext";
 
 export default function Sales() {
   const { t, lang } = useLanguage();
+  const { currentTheme } = useTheme();
+  const { isAdmin } = useAuth();
   const [sales, setSales] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editPrice, setEditPrice] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const data = await base44.entities.CashSale.list("-created_date", 500);
-      setSales(data);
-      setLoading(false);
-    };
-    load();
-  }, []);
-  // Filtro por búsqueda y fecha, y solo ventas reales (no devoluciones)
+  const loadSales = async () => {
+    setLoading(true);
+    const data = await base44.entities.CashSale.list("-created_date", 500);
+    setSales(data);
+    setLoading(false);
+  };
+
+  useEffect(() => { loadSales(); }, []);
+
   const normalize = (s) => s
     .trim()
     .toLowerCase()
@@ -30,10 +44,9 @@ export default function Sales() {
     .replace(/(\d+)/g, (m) => String(parseInt(m, 10)));
 
   const filtered = sales.filter((s) => {
-    const matchSearch = normalize(s.product_name).includes(normalize(search));
+    const matchSearch = normalize(s.product_name || "").includes(normalize(search));
     const matchDate = !dateFilter || s.sale_date === dateFilter;
-    // Solo ventas reales, no devoluciones
-    const isVentaReal = !s.notes?.toLowerCase().includes("devolución") &&
+    const isVentaReal = !s.notes?.toLowerCase().includes("devolucion") &&
       !s.notes?.toLowerCase().includes("return");
     return matchSearch && matchDate && isVentaReal;
   });
@@ -53,6 +66,40 @@ export default function Sales() {
     return lang === "en"
       ? moment(date).format("dddd, MMMM D, YYYY")
       : moment(date).format("dddd, D [de] MMMM [de] YYYY");
+  };
+
+  const startEdit = (sale) => {
+    setEditingId(sale.id);
+    setEditPrice(String(sale.unit_price || ""));
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditPrice("");
+  };
+
+  const confirmEdit = async (sale) => {
+    const newPrice = parseFloat(editPrice);
+    if (isNaN(newPrice) || newPrice < 0) {
+      toast.error(lang === "en" ? "Invalid price" : "Precio invalido");
+      return;
+    }
+    const newTotal = newPrice * (sale.quantity || 1);
+    await base44.entities.CashSale.update(sale.id, {
+      unit_price: newPrice,
+      total: newTotal,
+    });
+    toast.success(lang === "en" ? "Sale updated" : "Venta corregida");
+    setEditingId(null);
+    setEditPrice("");
+    loadSales();
+  };
+
+  const handleDelete = async (sale) => {
+    await base44.entities.CashSale.delete(sale.id);
+    toast.success(lang === "en" ? "Sale record deleted" : "Venta eliminada");
+    setDeleteTarget(null);
+    loadSales();
   };
 
   if (loading) return (
@@ -79,9 +126,9 @@ export default function Sales() {
         </div>
       </div>
 
-      <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 flex items-center justify-between">
+      <div className="rounded-xl bg-primary/5 border border-primary/20 p-4 flex items-center justify-between" style={{ boxShadow: `0 4px 24px ${currentTheme?.glowColor || "rgba(0,0,0,0.1)"}` }}>
         <span className="text-sm text-muted-foreground">{t("totalFiltrado")}</span>
-        <span className="text-2xl font-bold text-primary">${totalFiltered.toFixed(2)}</span>
+        <span className="text-2xl font-bold text-primary">{fmtMoneda(totalFiltered)}</span>
       </div>
 
       {sortedDates.length === 0 ? (
@@ -98,27 +145,107 @@ export default function Sales() {
               <div key={date} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-muted-foreground capitalize">{formatDate(date)}</h3>
-                  <span className="text-sm font-bold">${dateTotal.toFixed(2)}</span>
+                  <span className="text-sm font-bold">{fmtMoneda(dateTotal)}</span>
                 </div>
                 <div className="rounded-2xl border border-border bg-gradient-to-br from-card to-card/95 overflow-hidden divide-y divide-border">
-                  {dateSales.map((sale) => (
-                    <div key={sale.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors">
-                      <div>
-                        <p className="font-medium text-sm">{sale.product_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {sale.quantity} × ${sale.unit_price.toFixed(2)}
-                          {sale.notes && ` · ${sale.notes}`}
-                        </p>
+                  {dateSales.map((sale) => {
+                    const isEditing = editingId === sale.id;
+                    return (
+                      <div key={sale.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{sale.product_name}</p>
+                          {isEditing ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <span className="text-xs text-muted-foreground">{sale.quantity} x</span>
+                              <Input
+                                type="number"
+                                value={editPrice}
+                                onChange={(e) => setEditPrice(e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                className="h-7 w-36 text-xs"
+                                min={0}
+                                autoFocus
+                              />
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              {sale.quantity} x {fmtMoneda(sale.unit_price)}
+                              {sale.notes && ` - ${sale.notes}`}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {isEditing ? (
+                            <>
+                              <span className="text-xs text-muted-foreground">
+                                = {fmtMoneda((parseFloat(editPrice) || 0) * (sale.quantity || 1))}
+                              </span>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700" onClick={() => confirmEdit(sale)}>
+                                <Check className="w-4 h-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={cancelEdit}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-bold">{fmtMoneda(sale.total)}</span>
+                              {isAdmin && (
+                                <>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(sale)}>
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(sale)}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <span className="font-bold">${sale.total.toFixed(2)}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Diálogo de confirmación de eliminación */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+              </div>
+              <AlertDialogTitle className="text-base">
+                {lang === "en" ? "Delete sale?" : "¿Eliminar venta?"}
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-sm">
+              {lang === "en"
+                ? <>You are about to permanently delete the sale of <strong className="text-foreground">{deleteTarget?.product_name}</strong> ({deleteTarget?.quantity} x {fmtMoneda(deleteTarget?.unit_price)}). This action cannot be undone.</>
+                : <>Estás por eliminar permanentemente la venta de <strong className="text-foreground">{deleteTarget?.product_name}</strong> ({deleteTarget?.quantity} x {fmtMoneda(deleteTarget?.unit_price)}). Esta acción no se puede deshacer.</>
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+              {lang === "en" ? "Cancel" : "Cancelar"}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDelete(deleteTarget)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              {lang === "en" ? "Yes, delete" : "Sí, eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

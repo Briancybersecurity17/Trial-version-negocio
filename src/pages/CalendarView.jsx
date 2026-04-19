@@ -1,3 +1,4 @@
+import { fmtMoneda } from "@/utils/currency";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -170,7 +171,7 @@ export default function CalendarView() {
                   <div className="mt-1 space-y-0.5">
                     {dayTotal > 0 && (
                       <div className="text-xs font-bold truncate" style={{ color: currentTheme?.from }}>
-                        ${dayTotal.toFixed(0)}
+                        {fmtMoneda(dayTotal)}
                       </div>
                     )}
                     <div
@@ -217,14 +218,14 @@ export default function CalendarView() {
                   <DollarSign className="w-3 h-3" />
                   {t("apertura")}
                 </div>
-                <p className="text-xl font-bold">${selectedReg.opening_balance.toFixed(2)}</p>
+                <p className="text-xl font-bold">{fmtMoneda(selectedReg.opening_balance)}</p>
               </div>
               <div className="rounded-xl bg-primary/5 p-4">
                 <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
                   {t("ventasDelDia")}
                 </div>
-                <p className="text-xl font-bold text-primary">${selectedTotal.toFixed(2)}</p>
+                <p className="text-xl font-bold text-primary">{fmtMoneda(selectedTotal)}</p>
               </div>
               <div className="rounded-xl bg-success/5 p-4">
                 <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
@@ -232,9 +233,9 @@ export default function CalendarView() {
                   {selectedReg.status === "closed" ? t("cierre") : t("balanceActual")}
                 </div>
                 <p className="text-xl font-bold text-success">
-                  ${selectedReg.status === "closed"
-                    ? selectedReg.closing_balance.toFixed(2)
-                    : (selectedReg.opening_balance + selectedTotal).toFixed(2)}
+                  {selectedReg.status === "closed"
+                    ? fmtMoneda(selectedReg.closing_balance)
+                    : fmtMoneda(selectedReg.opening_balance + selectedTotal)}
                 </p>
               </div>
             </div>
@@ -252,9 +253,9 @@ export default function CalendarView() {
                   <div key={sale.id} className="p-3 flex items-center justify-between hover:bg-muted/20 transition-colors">
                     <div>
                       <p className="text-sm font-medium">{sale.product_name}</p>
-                      <p className="text-xs text-muted-foreground">{sale.quantity} × ${sale.unit_price.toFixed(2)}</p>
+                      <p className="text-xs text-muted-foreground">{sale.quantity} × {fmtMoneda(sale.unit_price)}</p>
                     </div>
-                    <span className="font-bold text-sm">${sale.total.toFixed(2)}</span>
+                    <span className="font-bold text-sm">{fmtMoneda(sale.total)}</span>
                   </div>
                 ))}
               </div>

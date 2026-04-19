@@ -3,17 +3,21 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, Package } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useAuth } from "@/lib/AuthContext";
+import { toImgSrc } from "@/utils/localImage";
+import { useState } from "react";
 
 export default function ProductCard({ product, onSell, onInventory }) {
   const { t, tCat } = useLanguage();
   const { isAdmin } = useAuth();
   const isOutOfStock = product.stock === 0;
+  const [imgError, setImgError] = useState(false);
+  const imgSrc = toImgSrc(product.image_url);
 
   return (
     <div className={`rounded-2xl bg-card border border-border overflow-hidden flex flex-col transition-all hover:shadow-md ${isOutOfStock ? "opacity-60" : ""}`}>
       <div className="aspect-square bg-muted/30 flex items-center justify-center overflow-hidden">
-        {product.image_url ? (
-          <img src={product.image_url} alt={product.name} className="w-full h-full object-cover" />
+        {imgSrc && !imgError ? (
+          <img src={imgSrc} alt={product.name} className="w-full h-full object-cover" onError={() => setImgError(true)} />
         ) : (
           <Package className="w-12 h-12 text-muted-foreground/30" />
         )}

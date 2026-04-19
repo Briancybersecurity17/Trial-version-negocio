@@ -1,9 +1,9 @@
 {
-  "name": "mi-negocio-trial",
-  "productName": "Mi Negocio Trial",
+  "name": "mi-negocio-desktop",
+  "productName": "Mi Negocio",
   "private": true,
   "version": "1.0.0",
-  "description": "Sistema de gestión para negocios y kioscos — Versión de Prueba",
+  "description": "Sistema de gestión para negocios y kioscos",
   "Author": "Brian Almada, Contacto: brian.almada14@gmail.com",
   "type": "commonjs",
   "main": "electron/main.js",
@@ -11,11 +11,10 @@
     "dev": "vite",
     "dev:electron": "cross-env NODE_ENV=development concurrently \"vite\" \"wait-on http://localhost:5173 && electron .\"",
     "build": "vite build",
-    "obfuscate": "node obfuscate.js",
-    "build:win":          "vite build && node obfuscate.js && electron-builder --win",
-    "build:win:installer": "vite build && node obfuscate.js && electron-builder --win nsis",
-    "build:linux":        "vite build && node obfuscate.js && electron-builder --linux",
-    "build:all":          "vite build && node obfuscate.js && electron-builder",
+    "build:win": "vite build && electron-builder --win",
+    "build:win:installer": "vite build && electron-builder --win nsis",
+    "build:linux": "vite build && electron-builder --linux",
+    "build:all": "vite build && electron-builder",
     "lint": "eslint . --quiet",
     "preview": "vite preview"
   },
@@ -96,7 +95,6 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-unused-imports": "^4.3.0",
     "globals": "^15.14.0",
-    "javascript-obfuscator": "^5.4.1",
     "postcss": "^8.5.3",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.2",
@@ -104,11 +102,11 @@
     "wait-on": "^8.0.0"
   },
   "build": {
-    "appId": "com.minegocio.trial",
-    "productName": "Mi Negocio Trial",
+    "appId": "com.minegocio.desktop",
+    "productName": "Mi Negocio",
     "copyright": "Copyright © 2026",
     "directories": {
-      "output": "release-trial",
+      "output": "release",
       "buildResources": "build-resources"
     },
     "files": [
@@ -123,11 +121,15 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "portable",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build-resources/icon.ico"
@@ -139,17 +141,21 @@
       "deleteAppDataOnUninstall": false,
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
-      "shortcutName": "Mi Negocio Trial"
+      "shortcutName": "Mi Negocio"
     },
     "linux": {
       "target": [
         {
           "target": "AppImage",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         },
         {
           "target": "deb",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
       "icon": "build-resources/icon.png"

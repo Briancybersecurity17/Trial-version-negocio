@@ -1,32 +1,44 @@
+import { fmtMoneda } from "@/utils/currency";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
-import { Search, ShoppingBag, Calendar as CalendarIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel,
+  AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
+  AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Search, ShoppingBag, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle } from "lucide-react";
 import moment from "moment";
 import { useLanguage } from "@/lib/LanguageContext";
+import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 
 export default function Gastos() {
   const { t, lang, tReason } = useLanguage();
-  const [transactions, setTransactions] = useState(/** @type {any[]} */ ([]));
+  const { isAdmin } = useAuth();
+  const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dateFilter, setDateFilter] = useState("");
+  const [editingId, setEditingId] = useState(null);
+  const [editQty, setEditQty] = useState("");
+  const [editCost, setEditCost] = useState("");
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   useEffect(() => {
     moment.locale(lang === "en" ? "en-gb" : "es");
   }, [lang]);
 
-  useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      const all = await base44.entities.InventoryTransaction.list("-transaction_date", 1000);
-      setTransactions(all);
-      setLoading(false);
-    };
-    load();
-  }, []);
+  const loadTransactions = async () => {
+    setLoading(true);
+    const all = await base44.entities.InventoryTransaction.list("-transaction_date", 1000);
+    setTransactions(all);
+    setLoading(false);
+  };
 
-  // Solo entradas de compra/reabastecimiento
+  useEffect(() => { loadTransactions(); }, []);
+
   const entradas = transactions.filter(
     (tr) => tr.type === "entrada" && tr.reason === "Compra/Reabastecimiento"
   );
@@ -35,19 +47,15 @@ export default function Gastos() {
     .trim()
     .toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9]/g, "") // elimina todo lo que no sea letra o número
-    .replace(/(\d+)/g, (m) => String(parseInt(m, 10))); // normaliza números (0600 → 600)
+    .replace(/[^a-z0-9]/g, "")
+    .replace(/(\d+)/g, (m) => String(parseInt(m, 10)));
 
-  // Filtro por búsqueda y fecha
   const filtered = entradas.filter((tr) => {
-    const matchSearch = 
-      !search || 
-      normalize(tr.product_name || "").includes(normalize(search));
+    const matchSearch = !search || normalize(tr.product_name || "").includes(normalize(search));
     const matchDate = !dateFilter || tr.transaction_date === dateFilter;
     return matchSearch && matchDate;
   });
 
-  /** @param {any} tr */
   const getTotal = (tr) => {
     if (tr.total_cost && tr.total_cost > 0) return tr.total_cost;
     return (tr.quantity || 0) * (tr.unit_cost || 0);
@@ -55,7 +63,7 @@ export default function Gastos() {
 
   const totalFiltered = filtered.reduce((sum, tr) => sum + getTotal(tr), 0);
 
-  const grouped = /** @type {{ [date: string]: any[] }} */ ({});
+  const grouped = {};
   filtered.forEach((tr) => {
     const date = tr.transaction_date || "__nodate__";
     if (!grouped[date]) grouped[date] = [];
@@ -63,13 +71,75 @@ export default function Gastos() {
   });
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
-  /** @param {string} date */
   const formatDate = (date) => {
     if (date === "__nodate__") return lang === "en" ? "No date" : "Sin fecha";
     const locale = lang === "en" ? "en-gb" : "es";
     return lang === "en"
       ? moment(date).locale(locale).format("dddd, MMMM D, YYYY")
       : moment(date).locale(locale).format("dddd, D [de] MMMM [de] YYYY");
+  };
+
+  const startEdit = (tr) => {
+    setEditingId(tr.id);
+    setEditQty(String(tr.quantity || ""));
+    setEditCost(String(tr.unit_cost || ""));
+  };
+
+  const cancelEdit = () => {
+    setEditingId(null);
+    setEditQty("");
+    setEditCost("");
+  };
+
+  const confirmEdit = async (tr) => {
+    const newQty  = parseInt(editQty);
+    const newCost = parseFloat(editCost);
+
+    if (isNaN(newQty) || newQty <= 0) {
+      toast.error(lang === "en" ? "Invalid quantity" : "Cantidad invalida");
+      return;
+    }
+    if (isNaN(newCost) || newCost < 0) {
+      toast.error(lang === "en" ? "Invalid cost" : "Costo invalido");
+      return;
+    }
+
+    const newTotal = newQty * newCost;
+
+    // Actualizar la transaccion
+    await base44.entities.InventoryTransaction.update(tr.id, {
+      quantity:   newQty,
+      unit_cost:  newCost,
+      total_cost: newTotal,
+      stock_after: (tr.stock_before || 0) + newQty,
+    });
+
+    // Sincronizar el stock real del producto
+    const products = await base44.entities.Product.filter({ id: tr.product_id });
+    if (products.length > 0) {
+      const prod = products[0];
+      const diffQty = newQty - (tr.quantity || 0);
+      const newStock = Math.max(0, (prod.stock || 0) + diffQty);
+      await base44.entities.Product.update(prod.id, { stock: newStock });
+    }
+
+    toast.success(lang === "en" ? "Purchase updated" : "Compra corregida");
+    cancelEdit();
+    loadTransactions();
+  };
+
+  const handleDelete = async (tr) => {
+    // Al eliminar una compra, descontar las unidades del stock
+    const products = await base44.entities.Product.filter({ id: tr.product_id });
+    if (products.length > 0) {
+      const prod = products[0];
+      const newStock = Math.max(0, (prod.stock || 0) - (tr.quantity || 0));
+      await base44.entities.Product.update(prod.id, { stock: newStock });
+    }
+    await base44.entities.InventoryTransaction.delete(tr.id);
+    toast.success(lang === "en" ? "Purchase record deleted" : "Compra eliminada");
+    setDeleteTarget(null);
+    loadTransactions();
   };
 
   if (loading) return (
@@ -88,20 +158,20 @@ export default function Gastos() {
       <div className="flex flex-col sm:flex-row gap-3">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input placeholder={t("buscarPorProducto")} value={search} onChange={(/** @type {import("react").ChangeEvent<HTMLInputElement>} */ e) => setSearch(e.target.value)} className="pl-10" />
+          <Input placeholder={t("buscarPorProducto")} value={search} onChange={(e) => setSearch(e.target.value)} className="pl-10" />
         </div>
         <div className="relative">
           <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input type="date" value={dateFilter} onChange={(/** @type {import("react").ChangeEvent<HTMLInputElement>} */ e) => setDateFilter(e.target.value)} className="pl-10 w-full sm:w-48" />
+          <Input type="date" value={dateFilter} onChange={(e) => setDateFilter(e.target.value)} className="pl-10 w-full sm:w-48" />
         </div>
       </div>
 
-      <div className="rounded-xl bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/30 p-4 flex items-center justify-between">
+      <div className="rounded-xl bg-gradient-to-r from-warning/10 to-warning/5 border border-warning/30 p-4 flex items-center justify-between" style={{ boxShadow: "0 4px 24px rgba(245,158,11,0.15)" }}>
         <div className="flex items-center gap-3">
           <ShoppingBag className="w-5 h-5 text-warning" />
           <span className="text-sm text-muted-foreground">{t("totalGastado")}</span>
         </div>
-        <span className="text-2xl font-bold text-warning">${totalFiltered.toFixed(2)}</span>
+        <span className="text-2xl font-bold text-warning">{fmtMoneda(totalFiltered)}</span>
       </div>
 
       {sortedDates.length === 0 ? (
@@ -119,27 +189,116 @@ export default function Gastos() {
               <div key={date} className="space-y-2">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-muted-foreground capitalize">{formatDate(date)}</h3>
-                  <span className="text-sm font-bold">${dayTotal.toFixed(2)}</span>
+                  <span className="text-sm font-bold">{fmtMoneda(dayTotal)}</span>
                 </div>
                 <div className="rounded-2xl border border-border bg-gradient-to-br from-card to-card/95 overflow-hidden divide-y divide-border">
-                  {dayItems.map((tr) => (
-                    <div key={tr.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors">
-                      <div>
-                        <p className="font-medium text-sm">{tr.product_name}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {tr.quantity} {t("unidades")} × ${(tr.unit_cost || 0).toFixed(2)}
-                          {tr.reason && ` · ${tReason(tr.reason)}`}
-                        </p>
+                  {dayItems.map((tr) => {
+                    const isEditing = editingId === tr.id;
+                    const previewTotal = (parseFloat(editCost) || 0) * (parseInt(editQty) || 0);
+                    return (
+                      <div key={tr.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors gap-4">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm">{tr.product_name}</p>
+                          {isEditing ? (
+                            <div className="flex items-center gap-2 mt-1 flex-wrap">
+                              <Input
+                                type="number"
+                                value={editQty}
+                                onChange={(e) => setEditQty(e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                className="h-7 w-20 text-xs"
+                                min={1}
+                                placeholder={t("unidades")}
+                                autoFocus
+                              />
+                              <span className="text-xs text-muted-foreground">x</span>
+                              <Input
+                                type="number"
+                                value={editCost}
+                                onChange={(e) => setEditCost(e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                className="h-7 w-32 text-xs"
+                                min={0}
+                                placeholder={lang === "en" ? "Unit cost" : "Costo unit."}
+                              />
+                            </div>
+                          ) : (
+                            <p className="text-xs text-muted-foreground">
+                              {tr.quantity} {t("unidades")} x {fmtMoneda(tr.unit_cost || 0)}
+                              {tr.reason && ` · ${tReason(tr.reason)}`}
+                            </p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          {isEditing ? (
+                            <>
+                              <span className="text-xs text-muted-foreground">= {fmtMoneda(previewTotal)}</span>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700" onClick={() => confirmEdit(tr)}>
+                                <Check className="w-4 h-4" />
+                              </Button>
+                              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={cancelEdit}>
+                                <X className="w-4 h-4" />
+                              </Button>
+                            </>
+                          ) : (
+                            <>
+                              <span className="font-bold">{fmtMoneda(getTotal(tr))}</span>
+                              {isAdmin && (
+                                <>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(tr)}>
+                                    <Pencil className="w-3.5 h-3.5" />
+                                  </Button>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(tr)}>
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </Button>
+                                </>
+                              )}
+                            </>
+                          )}
+                        </div>
                       </div>
-                      <span className="font-bold">${getTotal(tr).toFixed(2)}</span>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Diálogo de confirmación de eliminación */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <AlertDialogContent className="max-w-sm">
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3 mb-1">
+              <div className="w-10 h-10 rounded-full bg-destructive/10 flex items-center justify-center flex-shrink-0">
+                <AlertTriangle className="w-5 h-5 text-destructive" />
+              </div>
+              <AlertDialogTitle className="text-base">
+                {lang === "en" ? "Delete purchase?" : "¿Eliminar compra?"}
+              </AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="text-sm">
+              {lang === "en"
+                ? <>You are about to permanently delete the purchase of <strong className="text-foreground">{deleteTarget?.product_name}</strong> ({deleteTarget?.quantity} {lang === "en" ? "units" : "unidades"} × {fmtMoneda(deleteTarget?.unit_cost || 0)}). Stock will be adjusted automatically. This action cannot be undone.</>
+                : <>Estás por eliminar permanentemente la compra de <strong className="text-foreground">{deleteTarget?.product_name}</strong> ({deleteTarget?.quantity} unidades × {fmtMoneda(deleteTarget?.unit_cost || 0)}). El stock se ajustará automáticamente. Esta acción no se puede deshacer.</>
+              }
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel onClick={() => setDeleteTarget(null)}>
+              {lang === "en" ? "Cancel" : "Cancelar"}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => handleDelete(deleteTarget)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              <Trash2 className="w-4 h-4 mr-1.5" />
+              {lang === "en" ? "Yes, delete" : "Sí, eliminar"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

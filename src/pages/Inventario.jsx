@@ -1,3 +1,4 @@
+import { fmtMoneda, fmtExacto } from "@/utils/currency";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -5,9 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Search, Boxes, RotateCcw, ShoppingBag, ChevronDown } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
+import { useTheme } from "@/lib/ThemeContext";
 
 export default function Inventario() {
   const { t, lang, tCat } = useLanguage();
+  const { currentTheme } = useTheme();
   const [products, setProducts] = useState([]);
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,28 +88,28 @@ export default function Inventario() {
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
-        <div className="rounded-xl bg-primary/10 border border-primary/30 p-4 flex items-center justify-between sm:col-span-2">
+        <div className="rounded-xl bg-primary/10 border border-primary/30 p-4 flex items-center justify-between sm:col-span-2" style={{ boxShadow: `0 4px 24px ${currentTheme?.glowColor || "rgba(0,0,0,0.1)"}` }}>
           <div className="flex items-center gap-3">
             <Boxes className="w-5 h-5 text-primary" />
             <span className="text-sm text-muted-foreground">{t("totalInventario")}</span>
           </div>
-          <span className="text-2xl font-bold text-primary">${totalInventario.toFixed(2)}</span>
+          <span className="text-2xl font-bold text-primary">{fmtMoneda(totalInventario)}</span>
         </div>
-        <div className="rounded-xl bg-success/10 border border-success/30 p-4 flex items-center justify-between">
+        <div className="rounded-xl bg-success/10 border border-success/30 p-4 flex items-center justify-between" style={{ boxShadow: "0 4px 20px rgba(34,197,94,0.12)" }}>
           <div className="flex items-center gap-3">
             <RotateCcw className="w-5 h-5 text-success" />
             <span className="text-sm text-muted-foreground">{t("devoluciones")}</span>
           </div>
           <span className="text-2xl font-bold text-success">{devoluciones.length}</span>
         </div>
-        <div className="rounded-xl bg-primary/10 border border-primary/30 p-4 flex items-center justify-between">
+        <div className="rounded-xl bg-primary/10 border border-primary/30 p-4 flex items-center justify-between" style={{ boxShadow: `0 4px 24px ${currentTheme?.glowColor || "rgba(0,0,0,0.1)"}` }}>
           <div className="flex items-center gap-3">
             <RotateCcw className="w-5 h-5 text-primary" />
             <span className="text-sm text-muted-foreground">{t("ajustes")}</span>
           </div>
           <span className="text-2xl font-bold text-primary">{ajustesInventario.length}</span>
         </div>
-        <div className="rounded-xl bg-success/10 border border-success/30 p-4 flex items-center justify-between">
+        <div className="rounded-xl bg-success/10 border border-success/30 p-4 flex items-center justify-between" style={{ boxShadow: "0 4px 20px rgba(34,197,94,0.12)" }}>
           <div className="flex items-center gap-3">
             <ShoppingBag className="w-5 h-5 text-success" />
             <span className="text-sm text-muted-foreground">{t("compras")}</span>
@@ -131,7 +134,7 @@ export default function Inventario() {
               <span className="font-semibold text-sm">{t("producto")} ({filtered.length})</span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-sm font-bold text-primary">${totalInventario.toFixed(2)}</span>
+              <span className="text-sm font-bold text-primary">{fmtMoneda(totalInventario)}</span>
               <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showTable ? "rotate-180" : ""}`} />
             </div>
           </button>
@@ -174,8 +177,8 @@ export default function Inventario() {
                             {product.stock}
                           </span>
                         </td>
-                        <td className="p-4 text-right text-muted-foreground hidden sm:table-cell">${(product.cost || 0).toFixed(2)}</td>
-                        <td className="p-4 text-right font-bold text-primary">${valor.toFixed(2)}</td>
+                        <td className="p-4 text-right text-muted-foreground hidden sm:table-cell">{fmtMoneda((product.cost || 0))}</td>
+                        <td className="p-4 text-right font-bold text-primary">{fmtMoneda(valor)}</td>
                         <td className="p-4 text-right hidden md:table-cell">
                           {purchaseQty > 0 ? <span className="text-foreground font-semibold">+{purchaseQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
                         </td>
@@ -200,7 +203,7 @@ export default function Inventario() {
                     <td className="p-4 font-bold" colSpan={2}>TOTAL</td>
                     <td className="p-4 text-right font-bold"></td>
                     <td className="p-4 text-right font-bold hidden sm:table-cell"></td>
-                    <td className="p-4 text-right font-bold text-primary text-lg">${totalInventario.toFixed(2)}</td>
+                    <td className="p-4 text-right font-bold text-primary text-lg">{fmtMoneda(totalInventario)}</td>
                     <td className="p-4 hidden md:table-cell"></td>
                     <td className="p-4 hidden md:table-cell"></td>
                     <td className="p-4 hidden md:table-cell"></td>
@@ -244,8 +247,8 @@ export default function Inventario() {
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell text-muted-foreground">{tr.transaction_date}</td>
                         <td className="px-4 py-3 text-right">{tr.quantity}</td>
-                        <td className="px-4 py-3 text-right">${(tr.unit_cost || 0).toFixed(2)}</td>
-                        <td className="px-4 py-3 text-right">${((tr.total_cost || (tr.quantity || 0) * (tr.unit_cost || 0)) || 0).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right">{fmtMoneda((tr.unit_cost || 0))}</td>
+                        <td className="px-4 py-3 text-right">{fmtMoneda(((tr.total_cost || (tr.quantity || 0) * (tr.unit_cost || 0)) || 0))}</td>
                       </tr>
                     ))}
                   </tbody>

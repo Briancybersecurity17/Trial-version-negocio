@@ -1,3 +1,4 @@
+import { fmtMoneda, fmtExacto } from "@/utils/currency";
 import { useState, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -10,10 +11,12 @@ import CashRegisterPanel from "../components/CashRegisterPanel";
 import OpenRegisterDialog from "../components/OpenRegisterDialog";
 import moment from "moment";
 import { useLanguage } from "@/lib/LanguageContext";
+import { useTheme } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
 
 export default function Dashboard() {
   const { t, lang } = useLanguage();
+  const { currentTheme } = useTheme();
   const { isAdmin } = useAuth();
   const [products, setProducts] = useState([]);
   const [register, setRegister] = useState(null);
@@ -118,8 +121,8 @@ export default function Dashboard() {
 
           toast.warning(
             lang === "en"
-              ? `Previous register (${lastReg.date}) was auto-closed. Balance: $${closingBalance.toFixed(2)}`
-              : `La caja del ${lastReg.date} se cerró automáticamente. Balance: $${closingBalance.toFixed(2)}`,
+              ? `Previous register (${lastReg.date}) was auto-closed. Balance: ${fmtMoneda(closingBalance)}`
+              : `La caja del ${lastReg.date} se cerró automáticamente. Balance: ${fmtMoneda(closingBalance)}`,
             { duration: 6000 }
           );
         }
@@ -155,7 +158,7 @@ export default function Dashboard() {
       total_sales: 0,
     });
     setRegister(reg);
-    toast.success(`${lang === "en" ? "Register opened" : "Caja abierta"}. $${balance.toFixed(2)}`);
+    toast.success(`${lang === "en" ? "Register opened" : "Caja abierta"}. ${fmtMoneda(balance)}`);
   };
 
   const handleCloseRegister = async () => {
@@ -167,7 +170,7 @@ export default function Dashboard() {
       total_sales: totalSalesToday,
     });
     setRegister({ ...register, closing_balance: closingBalance, status: "closed", total_sales: totalSalesToday });
-    toast.success(`${lang === "en" ? "Register closed" : "Caja cerrada"}. $${closingBalance.toFixed(2)}`);
+    toast.success(`${lang === "en" ? "Register closed" : "Caja cerrada"}. ${fmtMoneda(closingBalance)}`);
   };
 
   const handleReopenRegister = async () => {
@@ -192,7 +195,7 @@ export default function Dashboard() {
       product_id: product.id, product_name: product.name, type: "salida",
       quantity, reason: "Venta", stock_before: product.stock, stock_after: newStock, transaction_date: today,
     });
-    toast.success(`${t("ventaRegistrada")}: ${quantity}x ${product.name} = $${total.toFixed(2)}`);
+    toast.success(`${t("ventaRegistrada")}: ${quantity}x ${product.name} = ${fmtMoneda(total)}`);
     loadData();
   };
 
@@ -279,29 +282,29 @@ export default function Dashboard() {
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <div className="rounded-xl bg-gradient-to-br from-card to-success/20 border border-border p-4">
+        <div className="rounded-xl bg-gradient-to-br from-card to-success/20 border border-border p-4" style={{ boxShadow: "0 4px 24px rgba(34,197,94,0.20)" }}>
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
             <Package className="w-3.5 h-3.5" />
             {t("productos")}
           </div>
           <p className="text-2xl font-bold">{products.length}</p>
         </div>
-        <div className="rounded-xl bg-gradient-to-br from-card to-primary/20 border border-border p-4">
+        <div className="rounded-xl bg-gradient-to-br from-card to-primary/20 border border-border p-4" style={{ boxShadow: `0 4px 24px ${currentTheme?.glowColor || "rgba(0,0,0,0.15)"}` }}>
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-1">
             <TrendingUp className="w-3.5 h-3.5" />
             {t("ventasHoy")}
           </div>
           <p className="text-2xl font-bold">{salesToday.length}</p>
-          <p className="text-sm font-semibold text-primary">${totalSalesToday.toFixed(2)}</p>
+          <p className="text-sm font-semibold text-primary">{fmtMoneda(totalSalesToday)}</p>
         </div>
-        <div className="rounded-xl bg-gradient-to-br from-card to-destructive/20 border border-border p-4">
+        <div className="rounded-xl bg-gradient-to-br from-card to-destructive/20 border border-border p-4" style={{ boxShadow: "0 4px 24px rgba(239,68,68,0.25)" }}>
           <div className="flex items-center gap-2 text-xs text-destructive mb-1">
             <XCircle className="w-3.5 h-3.5" />
             {t("sinStock")}
           </div>
           <p className="text-2xl font-bold text-destructive">{outOfStock}</p>
         </div>
-        <div className="rounded-xl bg-gradient-to-br from-card to-warning/20 border border-border p-4">
+        <div className="rounded-xl bg-gradient-to-br from-card to-warning/20 border border-border p-4" style={{ boxShadow: "0 4px 24px rgba(245,158,11,0.25)" }}>
           <div className="flex items-center gap-2 text-xs text-warning mb-1">
             <AlertTriangle className="w-3.5 h-3.5" />
             {t("stockBajo")}
@@ -311,7 +314,7 @@ export default function Dashboard() {
       </div>
 
       {totalPurchasesToday > 0 && (
-        <div className="rounded-2xl bg-gradient-to-br from-card to-warning/10 border border-border overflow-hidden">
+        <div className="rounded-2xl bg-gradient-to-br from-card to-warning/10 border border-border overflow-hidden" style={{ boxShadow: "0 4px 32px rgba(245,158,11,0.22)" }}>
           <button
             onClick={() => setShowPurchases(!showPurchases)}
             className="w-full flex items-center justify-between p-5 hover:bg-muted/20 transition-colors"
@@ -326,7 +329,7 @@ export default function Dashboard() {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-2xl font-bold text-warning">${totalPurchasesToday.toFixed(2)}</span>
+              <span className="text-2xl font-bold text-warning">{fmtMoneda(totalPurchasesToday)}</span>
               <ChevronDown className={`w-5 h-5 text-muted-foreground transition-transform duration-200 ${showPurchases ? "rotate-180" : ""}`} />
             </div>
           </button>
@@ -337,10 +340,10 @@ export default function Dashboard() {
                   <div>
                     <span className="font-medium">{tr.product_name}</span>
                     <span className="text-muted-foreground ml-2">
-                      {tr.quantity} {lang === "en" ? "units" : "uds."} × ${(tr.unit_cost || 0).toFixed(2)}
+                      {tr.quantity} {lang === "en" ? "units" : "uds."} × {fmtMoneda((tr.unit_cost || 0))}
                     </span>
                   </div>
-                  <span className="font-semibold">${(tr.total_cost || 0).toFixed(2)}</span>
+                  <span className="font-semibold">{fmtMoneda((tr.total_cost || 0))}</span>
                 </div>
               ))}
             </div>

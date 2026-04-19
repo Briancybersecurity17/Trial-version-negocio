@@ -261,3 +261,15 @@ html[class*="theme-"] .nav-active {
 html[class*="theme-"] .nav-active {
   animation: shimmer 3s ease-in-out infinite;
 }
+/* Efecto de luces que recorren el borde - Acceso local */
+@keyframes borderFlow {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Borde animado que recorre el perímetro - Acceso local */
+@keyframes borderDash {
+  0%   { stroke-dashoffset: 0; }
+  100% { stroke-dashoffset: -240; }
+}

@@ -39,48 +39,102 @@ export default function Layout() {
 
   const NavLink = ({ item, onClick }) => {
     const isActive = location.pathname === item.path;
+    const gradId = `navBorderGrad-${(item.path.replace(/\//g, "") || "root")}-${currentTheme?.label || "d"}`;
     return (
       <Link to={item.path} onClick={onClick}
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
+        className={`relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 overflow-hidden ${
           isActive ? "nav-active text-white shadow-lg" : "text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
         }`}
         style={isActive ? {
           background: `linear-gradient(90deg, rgb(var(--theme-from) / 0.3) 0%, rgb(var(--theme-to) / 0.1) 100%)`,
-          borderLeft: `2px solid rgb(var(--theme-from))`, color: "white", animation: "none",
+          color: "white",
         } : {}}>
-        <item.icon className="w-5 h-5 flex-shrink-0" style={isActive ? { color: `rgb(var(--theme-from))` } : {}} />
-        {t(item.labelKey)}
+        {isActive && (
+          <svg className="absolute inset-0 w-full h-full rounded-lg" style={{ pointerEvents: "none" }}>
+            <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)"
+              rx="7" ry="7" fill="none"
+              stroke={`url(#${gradId})`}
+              strokeWidth="1.5"
+              strokeDasharray="40 200"
+              style={{ animation: "borderDash 2.5s linear infinite" }}
+            />
+            <defs>
+              <linearGradient id={gradId} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor={currentTheme?.from || "#f97316"} stopOpacity="0" />
+                <stop offset="50%" stopColor={currentTheme?.to || "#fbbf24"} stopOpacity="1" />
+                <stop offset="100%" stopColor={currentTheme?.from || "#f97316"} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+          </svg>
+        )}
+        <item.icon className="w-5 h-5 flex-shrink-0 relative z-10" style={isActive ? { color: `rgb(var(--theme-from))` } : {}} />
+        <span className="relative z-10">{t(item.labelKey)}</span>
       </Link>
     );
   };
 
-  const SidebarFooter = () => (
+  const SidebarFooter = () => {
+    const acctGradId = `navBorderGrad-account-${currentTheme?.label || "d"}`;
+    const optsGradId = `navBorderGrad-opciones-${currentTheme?.label || "d"}`;
+    const isAcct = location.pathname === '/account';
+    const isOpts = location.pathname === '/opciones';
+    return (
     <div className="px-3 pb-4 space-y-1">
       {/* Mi Cuenta */}
       <Link to="/account" onClick={() => setMobileOpen(false)}
-        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-          location.pathname === '/account' ? 'text-white shadow-lg' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+        className={`relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 overflow-hidden ${
+          isAcct ? 'text-white shadow-lg' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
         }`}
-        style={location.pathname === '/account' ? {
+        style={isAcct ? {
           background: `linear-gradient(90deg, rgb(var(--theme-from) / 0.3) 0%, rgb(var(--theme-to) / 0.1) 100%)`,
-          borderLeft: `2px solid rgb(var(--theme-from))`,
+          color: "white",
         } : {}}>
-        <User className="w-5 h-5 flex-shrink-0" style={location.pathname === '/account' ? { color: `rgb(var(--theme-from))` } : {}} />
-        Mi cuenta
+        {isAcct && (
+          <svg className="absolute inset-0 w-full h-full rounded-lg" style={{ pointerEvents: "none" }}>
+            <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)"
+              rx="7" ry="7" fill="none" stroke={`url(#${acctGradId})`}
+              strokeWidth="1.5" strokeDasharray="40 200"
+              style={{ animation: "borderDash 2.5s linear infinite" }} />
+            <defs>
+              <linearGradient id={acctGradId} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor={currentTheme?.from || "#f97316"} stopOpacity="0" />
+                <stop offset="50%" stopColor={currentTheme?.to || "#fbbf24"} stopOpacity="1" />
+                <stop offset="100%" stopColor={currentTheme?.from || "#f97316"} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+          </svg>
+        )}
+        <User className="w-5 h-5 flex-shrink-0 relative z-10" style={isAcct ? { color: `rgb(var(--theme-from))` } : {}} />
+        <span className="relative z-10">Mi cuenta</span>
       </Link>
 
       {/* Opciones — solo admin */}
       {auth.isAdmin && (
         <Link to="/opciones" onClick={() => setMobileOpen(false)}
-          className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 ${
-            location.pathname === '/opciones' ? 'text-white shadow-lg' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
+          className={`relative flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-200 overflow-hidden ${
+            isOpts ? 'text-white shadow-lg' : 'text-sidebar-foreground/70 hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
           }`}
-          style={location.pathname === '/opciones' ? {
+          style={isOpts ? {
             background: `linear-gradient(90deg, rgb(var(--theme-from) / 0.3) 0%, rgb(var(--theme-to) / 0.1) 100%)`,
-            borderLeft: `2px solid rgb(var(--theme-from))`,
+            color: "white",
           } : {}}>
-          <Settings className="w-5 h-5 flex-shrink-0" style={location.pathname === '/opciones' ? { color: `rgb(var(--theme-from))` } : {}} />
-          {t("opciones")}
+          {isOpts && (
+            <svg className="absolute inset-0 w-full h-full rounded-lg" style={{ pointerEvents: "none" }}>
+              <rect x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)"
+                rx="7" ry="7" fill="none" stroke={`url(#${optsGradId})`}
+                strokeWidth="1.5" strokeDasharray="40 200"
+                style={{ animation: "borderDash 2.5s linear infinite" }} />
+              <defs>
+                <linearGradient id={optsGradId} x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor={currentTheme?.from || "#f97316"} stopOpacity="0" />
+                  <stop offset="50%" stopColor={currentTheme?.to || "#fbbf24"} stopOpacity="1" />
+                  <stop offset="100%" stopColor={currentTheme?.from || "#f97316"} stopOpacity="0" />
+                </linearGradient>
+              </defs>
+            </svg>
+          )}
+          <Settings className="w-5 h-5 flex-shrink-0 relative z-10" style={isOpts ? { color: `rgb(var(--theme-from))` } : {}} />
+          <span className="relative z-10">{t("opciones")}</span>
         </Link>
       )}
 
@@ -106,10 +160,34 @@ export default function Layout() {
         </button>
       </div>
 
-      {/* Acceso local */}
+      {/* Acceso local */} 
       {serverInfo && auth.isAdmin && (
-        <div className="mx-1 p-3 rounded-xl border"
-          style={{ background: `linear-gradient(135deg, rgb(var(--theme-from) / 0.12) 0%, rgb(var(--theme-to) / 0.06) 100%)`, borderColor: `rgb(var(--theme-from) / 0.25)` }}>
+        <div className="mx-1 rounded-xl relative p-3"
+          style={{
+            background: `linear-gradient(135deg, rgb(var(--theme-from) / 0.12) 0%, rgb(var(--theme-to) / 0.06) 100%)`,
+          }}>
+          {/* Borde animado SVG que recorre el perímetro */}
+          <svg className="absolute inset-0 w-full h-full rounded-xl" style={{ pointerEvents: "none" }}>
+            <rect
+              x="1" y="1"
+              width="calc(100% - 2px)" height="calc(100% - 2px)"
+              rx="10" ry="10"
+              fill="none"
+              stroke={`url(#borderGrad-${currentTheme?.label || "default"})`}
+              strokeWidth="1.5"
+              strokeDasharray="40 200"
+              style={{
+                animation: "borderDash 2.5s linear infinite",
+              }}
+            />
+            <defs>
+              <linearGradient id={`borderGrad-${currentTheme?.label || "default"}`} x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor={currentTheme?.from || "#f97316"} stopOpacity="0" />
+                <stop offset="50%" stopColor={currentTheme?.to || "#fbbf24"} stopOpacity="1" />
+                <stop offset="100%" stopColor={currentTheme?.from || "#f97316"} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+          </svg>
           <div className="flex items-center gap-2 mb-1" style={{ color: `rgb(var(--theme-from))` }}>
             <Wifi className="w-3 h-3" />
             <span className="text-xs font-semibold">Acceso local</span>
@@ -124,7 +202,8 @@ export default function Layout() {
         {t("sistema")}
       </div>
     </div>
-  );
+    );
+  };
 
   const SidebarContent = ({ onNavClick }) => (
     <>

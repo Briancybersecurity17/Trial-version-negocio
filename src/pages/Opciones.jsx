@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useLanguage, DEFAULT_CATEGORY_KEYS } from "@/lib/LanguageContext";
 import { useTheme, THEMES } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
-import { Settings, Languages, Download, Trash2, AlertTriangle, CheckCircle, Palette, HardDrive, Tag, Plus, Pencil, X, Check, ChevronDown, RotateCcw } from "lucide-react";
+import { Settings, Languages, Download, Trash2, AlertTriangle, CheckCircle, Palette, HardDrive, Tag, Plus, Pencil, X, Check, ChevronDown, RotateCcw, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -12,7 +12,7 @@ const isElectron = typeof window !== 'undefined' && !!window.electronDB;
 
 export default function Opciones() {
   const { lang, setLang, t, tCat, tReason, customCategories, updateCustomCategories, categoryKeys } = useLanguage();
-  const { theme, setTheme, currentTheme } = useTheme();
+  const { theme, setTheme, currentTheme, darkMode, setDarkMode } = useTheme();
   const { resetApp } = useAuth();
   const [exporting, setExporting] = useState(false);
   const [resetting, setResetting] = useState(false);
@@ -286,7 +286,7 @@ export default function Opciones() {
           </div>
         </div>
         <div className="flex gap-3">
-          {[{ code: "es", flag: "🇦🇷", label: t("espanol") }, { code: "en", flag: "🇺🇸", label: t("ingles") }].map(({ code, flag, label }) => (
+          {[{ code: "es", flag: "🇪🇸🇦🇷", label: t("espanol") }, { code: "en", flag: "🇺🇸", label: t("ingles") }].map(({ code, flag, label }) => (
             <button key={code} onClick={() => setLang(code)}
               className={`flex-1 py-3 px-4 rounded-xl border-2 text-sm font-medium transition-all flex items-center justify-center gap-2 ${lang === code ? "border-transparent text-white shadow-md" : "border-border hover:border-primary/40 text-muted-foreground"}`}
               style={lang === code ? { background: currentTheme?.heroGradient } : {}}
@@ -294,6 +294,27 @@ export default function Opciones() {
               <span className="text-lg">{flag}</span>{label}{lang === code && <CheckCircle className="w-4 h-4" />}
             </button>
           ))}
+        </div>
+      </div>
+
+      {/* Modo oscuro */}
+      <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: currentTheme?.heroGradient }}>
+            <Moon className="w-5 h-5 text-white" />
+          </div>
+          <div className="flex-1">
+            <h2 className="font-semibold text-base">{lang === "en" ? "Dark Mode" : "Modo Oscuro"}</h2>
+            <p className="text-sm text-muted-foreground">{lang === "en" ? "Switch between light and dark interface" : "Cambiá entre interfaz clara y oscura"}</p>
+          </div>
+          <button
+            onClick={() => { setDarkMode(!darkMode); toast.success(darkMode ? (lang === "en" ? "Light mode activated" : "Modo claro activado") : (lang === "en" ? "Dark mode activated" : "Modo oscuro activado")); }}
+            className={`relative w-14 h-7 rounded-full transition-all duration-300 focus:outline-none ${darkMode ? "bg-primary" : "bg-muted-foreground/30"}`}
+          >
+            <span className={`absolute top-0.5 left-0.5 w-6 h-6 rounded-full bg-white shadow-md transition-transform duration-300 flex items-center justify-center ${darkMode ? "translate-x-7" : "translate-x-0"}`}>
+              {darkMode ? <Moon className="w-3 h-3 text-primary" /> : <Sun className="w-3 h-3 text-muted-foreground" />}
+            </span>
+          </button>
         </div>
       </div>
 

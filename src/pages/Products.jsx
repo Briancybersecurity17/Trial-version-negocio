@@ -1,3 +1,4 @@
+import { fmtMoneda } from "@/utils/currency";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -7,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Search, Plus, Pencil, Trash2, Package } from "lucide-react";
 import StockBadge from "../components/StockBadge";
+import { toImgSrc } from "@/utils/localImage";
 import ProductFormDialog from "../components/ProductFormDialog";
 import InventoryDialog from "../components/InventoryDialog";
 import moment from "moment";
@@ -79,6 +81,8 @@ export default function Products() {
     }
 
     if (editProduct) {
+      // Al editar solo se actualizan los datos del producto.
+      // El stock se maneja desde los movimientos de inventario.
       await base44.entities.Product.update(editProduct.id, form);
       toast.success(t("productoActualizado"));
     } else {
@@ -223,11 +227,12 @@ export default function Products() {
                     <td className="p-4">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-lg bg-muted/50 flex items-center justify-center overflow-hidden flex-shrink-0">
-                          {product.image_url ? (
-                            <img src={product.image_url} alt="" className="w-full h-full object-cover" />
-                          ) : (
-                            <Package className="w-4 h-4 text-muted-foreground/40" />
-                          )}
+                          {toImgSrc(product.image_url) ? (
+                            <img src={toImgSrc(product.image_url)} alt="" className="w-full h-full object-cover"
+                              onError={(e) => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}
+                            />
+                          ) : null}
+                          <Package className="w-4 h-4 text-muted-foreground/40" style={{ display: toImgSrc(product.image_url) ? 'none' : 'block' }} />
                         </div>
                         <div>
                           <p className="font-medium">{product.name}</p>
@@ -239,8 +244,8 @@ export default function Products() {
                       <span className="px-2 py-1 rounded-md bg-muted text-xs font-medium">{tCat(product.category)}</span>
                     </td>
                     <td className="p-4"><StockBadge stock={product.stock} minStock={product.min_stock} /></td>
-                    <td className="p-4 text-right font-semibold">${product.price.toFixed(2)}</td>
-                    <td className="p-4 text-right text-muted-foreground hidden sm:table-cell">${product.cost.toFixed(2)}</td>
+                    <td className="p-4 text-right font-semibold">{fmtMoneda(product.price)}</td>
+                    <td className="p-4 text-right text-muted-foreground hidden sm:table-cell">{fmtMoneda(product.cost)}</td>
                     {/* Fix #1: acciones solo para admin */}
                     {isAdmin && (
                       <td className="p-4 text-right">

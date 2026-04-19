@@ -1,5 +1,4 @@
 import { Toaster } from "@/components/ui/toaster"
-import TrialGuard from "./TrialGuard";
 import moment from "moment";
 import "moment/locale/es";
 moment.locale("es");
@@ -70,19 +69,17 @@ function AppRoutes() {
 
 function App() {
   return (
-    <TrialGuard>
-      <AuthProvider>
-        <ThemeProvider>
-          <LanguageProvider>
-            <QueryClientProvider client={queryClientInstance}>
-              <AppRoutes />
-              <Toaster />
-              <SonnerToaster richColors position="top-right" />
-            </QueryClientProvider>
-          </LanguageProvider>
-        </ThemeProvider>
-      </AuthProvider>
-    </TrialGuard>
+    <AuthProvider>
+      <ThemeProvider>
+        <LanguageProvider>
+          <QueryClientProvider client={queryClientInstance}>
+            <AppRoutes />
+            <Toaster />
+            <SonnerToaster richColors position="top-right" />
+          </QueryClientProvider>
+        </LanguageProvider>
+      </ThemeProvider>
+    </AuthProvider>
   )
 }
 

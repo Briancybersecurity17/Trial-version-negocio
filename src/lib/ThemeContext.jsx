@@ -93,20 +93,28 @@ export function ThemeProvider({ children }) {
   const [theme, setThemeState] = useState(
     () => localStorage.getItem("app-color-theme") || "naranja"
   );
+  const [darkMode, setDarkModeState] = useState(
+    () => localStorage.getItem("app-dark-mode") === "true"
+  );
 
   const applyTheme = (themeName) => {
     const t = THEMES[themeName];
     if (!t) return;
     const root = document.documentElement;
-
-    // Remove old theme classes
     Object.keys(THEMES).forEach((k) => root.classList.remove(`theme-${k}`));
     root.classList.add(`theme-${themeName}`);
-
-    // Apply CSS vars
     Object.entries(t.vars).forEach(([k, v]) => {
       root.style.setProperty(k, v);
     });
+  };
+
+  const applyDarkMode = (enabled) => {
+    const root = document.documentElement;
+    if (enabled) {
+      root.classList.add("dark");
+    } else {
+      root.classList.remove("dark");
+    }
   };
 
   const setTheme = (themeName) => {
@@ -115,13 +123,20 @@ export function ThemeProvider({ children }) {
     applyTheme(themeName);
   };
 
+  const setDarkMode = (enabled) => {
+    setDarkModeState(enabled);
+    localStorage.setItem("app-dark-mode", String(enabled));
+    applyDarkMode(enabled);
+  };
+
   // Apply on mount
   useEffect(() => {
     applyTheme(theme);
+    applyDarkMode(darkMode);
   }, []);
 
   return (
-    <ThemeContext.Provider value={{ theme, setTheme, themes: THEMES, currentTheme: THEMES[theme] }}>
+    <ThemeContext.Provider value={{ theme, setTheme, themes: THEMES, currentTheme: THEMES[theme], darkMode, setDarkMode }}>
       {children}
     </ThemeContext.Provider>
   );

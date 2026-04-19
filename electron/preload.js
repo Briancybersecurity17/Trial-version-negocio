@@ -1,13 +1,13 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('electronDB', {
-  list:      (e, sort, limit)    => ipcRenderer.invoke('db:list', e, sort, limit),
-  filter:    (e, q, sort, limit) => ipcRenderer.invoke('db:filter', e, q, sort, limit),
-  create:    (e, data)           => ipcRenderer.invoke('db:create', e, data),
-  update:    (e, id, data)       => ipcRenderer.invoke('db:update', e, id, data),
-  delete:    (e, id)             => ipcRenderer.invoke('db:delete', e, id),
-  deleteAll: (e)                 => ipcRenderer.invoke('db:deleteAll', e),
-  exportAll: ()                  => ipcRenderer.invoke('db:exportAll'),
+  list:      (e, sort, limit)        => ipcRenderer.invoke('db:list', e, sort, limit),
+  filter:    (e, q, sort, limit)     => ipcRenderer.invoke('db:filter', e, q, sort, limit),
+  create:    (e, data)               => ipcRenderer.invoke('db:create', e, data),
+  update:    (e, id, data)           => ipcRenderer.invoke('db:update', e, id, data),
+  delete:    (e, id)                 => ipcRenderer.invoke('db:delete', e, id),
+  deleteAll: (e)                     => ipcRenderer.invoke('db:deleteAll', e),
+  exportAll: ()                      => ipcRenderer.invoke('db:exportAll'),
 });
 
 contextBridge.exposeInMainWorld('electronAuth', {
@@ -27,11 +27,12 @@ contextBridge.exposeInMainWorld('electronServer', {
 });
 
 contextBridge.exposeInMainWorld('electronSettings', {
-  get: (   ) => ipcRenderer.invoke('settings:get'),
+  get: () => ipcRenderer.invoke('settings:get'),
   set: (data) => ipcRenderer.invoke('settings:set', data),
 });
 
-// ─── Trial ────────────────────────────────────────────────────────────────────
-contextBridge.exposeInMainWorld('electronTrial', {
-  status: () => ipcRenderer.invoke('trial:status'),
+contextBridge.exposeInMainWorld('electronFiles', {
+  /** Abre un diálogo nativo para elegir una imagen. Devuelve la ruta absoluta o null. */
+  openImage: () => ipcRenderer.invoke('dialog:openImageFile'),
 });
+

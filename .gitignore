@@ -36,5 +36,3 @@ win-unpacked/
 
 # Vite cache
 .vite/
-release-trial/
-electron/.integrity

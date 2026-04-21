@@ -12,6 +12,8 @@ export default function Login() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
+  const businessName = localStorage.getItem('negocio_nombre') || 'Mi Negocio';
+
   const from = currentTheme?.from || '#f97316';
   const to   = currentTheme?.to   || '#fbbf24';
   const mid  = currentTheme?.mid  || '#fb923c';
@@ -90,11 +92,24 @@ export default function Login() {
             Bienvenido
           </h1>
 
+          {/* Nombre del negocio con mismo estilo que Bienvenido */}
+          <h2 style={{
+            fontSize: 34, fontWeight: 800, margin: '2px 0 0',
+            background: `linear-gradient(135deg, ${from}, ${to})`,
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            letterSpacing: '-0.5px',
+            textAlign: 'center',
+          }}>
+            {businessName}
+          </h2>
+
           {/* Subtítulo con Sparkles */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
             <Sparkles style={{ width: 12, height: 12, color: from, opacity: 0.7 }} />
             <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>
-              Mi Negocio · Punto de Venta
+              {businessName} · Punto de Venta
             </p>
             <Sparkles style={{ width: 12, height: 12, color: to, opacity: 0.7 }} />
           </div>
@@ -235,7 +250,7 @@ export default function Login() {
           textAlign: 'center', fontSize: 11,
           color: 'var(--muted-foreground)', opacity: 0.35, marginTop: 20,
         }}>
-          Mi Negocio v1.0.0
+          App Mi Negocio v1.0.0
         </p>
       </div>
 

@@ -21,7 +21,7 @@ import Inventario from './pages/Inventario';
 import Mermas from './pages/Mermas';
 import Opciones from './pages/Opciones';
 import Account from './pages/Account';
-import TrialGuard from './TrialGuard';
+import LicenseGuard from './LicenseGuard';
 
 // Rutas protegidas: redirige al login si no está autenticado
 function ProtectedRoute({ children }) {
@@ -70,7 +70,7 @@ function AppRoutes() {
 
 function App() {
   return (
-    <TrialGuard>
+    <LicenseGuard>
       <AuthProvider>
         <ThemeProvider>
           <LanguageProvider>
@@ -82,7 +82,7 @@ function App() {
           </LanguageProvider>
         </ThemeProvider>
       </AuthProvider>
-    </TrialGuard>
+    </LicenseGuard>
   )
 }
 

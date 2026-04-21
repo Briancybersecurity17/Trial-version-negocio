@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Search, Trash2, Calendar as CalendarIcon, DollarSign, Pencil, Check, X } from "lucide-react";
 import moment from "moment";
+import "moment/locale/es";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useAuth } from "@/lib/AuthContext";
 import { toast } from "sonner";
@@ -57,9 +58,16 @@ export default function Mermas() {
 
   const formatDate = (date) => {
     if (date === "__nodate__") return lang === "en" ? "No date" : "Sin fecha";
-    return lang === "en"
-      ? moment(date).format("dddd, MMMM D, YYYY")
-      : moment(date).format("dddd, D [de] MMMM [de] YYYY");
+    const d = new Date(date + "T00:00:00");
+    if (lang === "en") {
+      return d.toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    } else {
+      const weekday = d.toLocaleDateString("es-AR", { weekday: "long" });
+      const day = d.getDate();
+      const month = d.toLocaleDateString("es-AR", { month: "long" });
+      const year = d.getFullYear();
+      return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${day} de ${month.charAt(0).toUpperCase() + month.slice(1)} de ${year}`;
+    }
   };
 
   const startEdit = (tr) => {

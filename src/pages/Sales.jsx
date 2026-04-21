@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Search, Receipt, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle } from "lucide-react";
 import moment from "moment";
+import "moment/locale/es";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useTheme } from "@/lib/ThemeContext";
 import { toast } from "sonner";
@@ -25,6 +26,7 @@ export default function Sales() {
   const [dateFilter, setDateFilter] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editPrice, setEditPrice] = useState("");
+  const [editQty, setEditQty] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
 
   const loadSales = async () => {
@@ -63,35 +65,51 @@ export default function Sales() {
 
   const formatDate = (date) => {
     if (date === "Sin fecha" || date === "No date") return lang === "en" ? "No date" : "Sin fecha";
-    return lang === "en"
-      ? moment(date).format("dddd, MMMM D, YYYY")
-      : moment(date).format("dddd, D [de] MMMM [de] YYYY");
+    const d = new Date(date + "T00:00:00");
+    if (lang === "en") {
+      return d.toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+    } else {
+      const weekday = d.toLocaleDateString("es-AR", { weekday: "long" });
+      const day = d.getDate();
+      const month = d.toLocaleDateString("es-AR", { month: "long" });
+      const year = d.getFullYear();
+      return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${day} de ${month.charAt(0).toUpperCase() + month.slice(1)} de ${year}`;
+    }
   };
 
   const startEdit = (sale) => {
     setEditingId(sale.id);
     setEditPrice(String(sale.unit_price || ""));
+    setEditQty(String(sale.quantity || ""));
   };
 
   const cancelEdit = () => {
     setEditingId(null);
     setEditPrice("");
+    setEditQty("");
   };
 
   const confirmEdit = async (sale) => {
     const newPrice = parseFloat(editPrice);
+    const newQty   = parseInt(editQty, 10);
     if (isNaN(newPrice) || newPrice < 0) {
       toast.error(lang === "en" ? "Invalid price" : "Precio invalido");
       return;
     }
-    const newTotal = newPrice * (sale.quantity || 1);
+    if (isNaN(newQty) || newQty < 1) {
+      toast.error(lang === "en" ? "Invalid quantity" : "Cantidad invalida");
+      return;
+    }
+    const newTotal = newPrice * newQty;
     await base44.entities.CashSale.update(sale.id, {
       unit_price: newPrice,
-      total: newTotal,
+      quantity:   newQty,
+      total:      newTotal,
     });
     toast.success(lang === "en" ? "Sale updated" : "Venta corregida");
     setEditingId(null);
     setEditPrice("");
+    setEditQty("");
     loadSales();
   };
 
@@ -156,15 +174,25 @@ export default function Sales() {
                           <p className="font-medium text-sm">{sale.product_name}</p>
                           {isEditing ? (
                             <div className="flex items-center gap-2 mt-1">
-                              <span className="text-xs text-muted-foreground">{sale.quantity} x</span>
+                              <Input
+                                type="number"
+                                value={editQty}
+                                onChange={(e) => setEditQty(e.target.value)}
+                                onFocus={(e) => e.target.select()}
+                                className="h-7 w-20 text-xs"
+                                min={1}
+                                autoFocus
+                                placeholder={lang === "en" ? "Qty" : "Cant."}
+                              />
+                              <span className="text-xs text-muted-foreground">x</span>
                               <Input
                                 type="number"
                                 value={editPrice}
                                 onChange={(e) => setEditPrice(e.target.value)}
                                 onFocus={(e) => e.target.select()}
-                                className="h-7 w-36 text-xs"
+                                className="h-7 w-32 text-xs"
                                 min={0}
-                                autoFocus
+                                placeholder={lang === "en" ? "Price" : "Precio"}
                               />
                             </div>
                           ) : (
@@ -179,7 +207,7 @@ export default function Sales() {
                           {isEditing ? (
                             <>
                               <span className="text-xs text-muted-foreground">
-                                = {fmtMoneda((parseFloat(editPrice) || 0) * (sale.quantity || 1))}
+                                = {fmtMoneda((parseFloat(editPrice) || 0) * (parseInt(editQty, 10) || 1))}
                               </span>
                               <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700" onClick={() => confirmEdit(sale)}>
                                 <Check className="w-4 h-4" />

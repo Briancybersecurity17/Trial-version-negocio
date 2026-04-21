@@ -4,7 +4,7 @@ import { toast } from "sonner";
 import { useLanguage, DEFAULT_CATEGORY_KEYS } from "@/lib/LanguageContext";
 import { useTheme, THEMES } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
-import { Settings, Languages, Download, Trash2, AlertTriangle, CheckCircle, Palette, HardDrive, Tag, Plus, Pencil, X, Check, ChevronDown, RotateCcw, Moon, Sun } from "lucide-react";
+import { Settings, Languages, Download, Trash2, AlertTriangle, CheckCircle, Palette, HardDrive, Tag, Plus, Pencil, X, Check, ChevronDown, RotateCcw, Moon, Sun, Store } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -18,6 +18,21 @@ export default function Opciones() {
   const [resetting, setResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
+
+  // ── Nombre del negocio ─────────────────────────────────────────────────────
+  const [businessName, setBusinessName] = useState(
+    () => localStorage.getItem('negocio_nombre') || 'Mi Negocio'
+  );
+  const [businessNameInput, setBusinessNameInput] = useState(
+    () => localStorage.getItem('negocio_nombre') || 'Mi Negocio'
+  );
+  const handleSaveBusinessName = () => {
+    const val = businessNameInput.trim();
+    if (!val) return;
+    localStorage.setItem('negocio_nombre', val);
+    setBusinessName(val);
+    toast.success(lang === 'en' ? 'Business name saved' : 'Nombre guardado');
+  };
 
   // ── Categories state ───────────────────────────────────────────────────────
   const [newCatEs, setNewCatEs] = useState("");
@@ -316,6 +331,45 @@ export default function Opciones() {
             </span>
           </button>
         </div>
+      </div>
+
+      {/* Nombre del negocio */}
+      <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: currentTheme?.heroGradient }}>
+            <Store className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-base">
+              {lang === 'en' ? 'Business Name' : 'Nombre del Negocio'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {lang === 'en' ? 'Shown on the login screen' : 'Se muestra en la pantalla de inicio de sesión'}
+            </p>
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <Input
+            value={businessNameInput}
+            onChange={(e) => setBusinessNameInput(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSaveBusinessName()}
+            placeholder={lang === 'en' ? 'My Business' : 'Mi Negocio'}
+            className="flex-1"
+          />
+          <button
+            onClick={handleSaveBusinessName}
+            disabled={!businessNameInput.trim() || businessNameInput.trim() === businessName}
+            className="px-4 py-2 rounded-xl text-sm font-semibold text-white flex items-center gap-2 transition-all hover:opacity-90 disabled:opacity-40"
+            style={{ background: currentTheme?.heroGradient }}
+          >
+            <CheckCircle className="w-4 h-4" />
+            {lang === 'en' ? 'Save' : 'Guardar'}
+          </button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {lang === 'en' ? 'Current:' : 'Actual:'}{' '}
+          <span className="font-semibold" style={{ color: currentTheme?.from }}>{businessName}</span>
+        </p>
       </div>
 
       {/* Exportar */}

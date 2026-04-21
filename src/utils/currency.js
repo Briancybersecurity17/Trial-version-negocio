@@ -59,8 +59,9 @@ export function fmtExacto(valor) {
 
 // ─── Helper interno ───────────────────────────────────────────────────────────
 function _fmt(v) {
-  // Muestra hasta 1 decimal, sin ceros innecesarios
-  // 1.5 → "1,5"   /   2.0 → "2"   /   1.25 → "1,3"
+  // 2 decimales significativos para evitar pérdida de precisión
+  // 1.555 → "1,55"  /  1.5 → "1,5"  /  2.0 → "2"
   if (v % 1 === 0) return v.toFixed(0);
-  return v.toFixed(1).replace('.', ',');
+  const str = v.toFixed(2).replace('.', ',');
+  return str.replace(/,?0+$/, ''); // quitar ceros finales
 }

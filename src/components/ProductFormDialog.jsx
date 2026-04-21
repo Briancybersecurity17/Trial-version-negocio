@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,178 +15,265 @@ export default function ProductFormDialog({ open, onOpenChange, product, onSave 
   const [form, setForm] = useState({
     name: "", sku: "", category: "", stock: 0, min_stock: 5, price: 0, cost: 0, image_url: "",
   });
-  const [imgError, setImgError] = useState(false);
+  const [imgError, setImgError]           = useState(false);
+  // Ruta local temporal (solo en Electron, antes de confirmar guardado)
+  const [pendingImagePath, setPendingImagePath] = useState(null);
+  // Controla el modal de confirmación de reemplazo de imagen
+  const [showReplaceConfirm, setShowReplaceConfirm] = useState(false);
+  // Ruta que el usuario eligió y espera confirmación
+  const [candidatePath, setCandidatePath] = useState(null);
+
+  const isElectron = typeof window !== "undefined" && !!window.electronFiles;
 
   useEffect(() => {
     if (product) {
       setForm({
-        name: product.name || "",
-        sku: product.sku || "",
-        category: product.category || "",
-        stock: product.stock || 0,
+        name:      product.name      || "",
+        sku:       product.sku       || "",
+        category:  product.category  || "",
+        stock:     product.stock     || 0,
         min_stock: product.min_stock || 5,
-        price: product.price || 0,
-        cost: product.cost || 0,
+        price:     product.price     || 0,
+        cost:      product.cost      || 0,
         image_url: product.image_url || "",
       });
     } else {
       setForm({ name: "", sku: "", category: "", stock: 0, min_stock: 5, price: 0, cost: 0, image_url: "" });
     }
     setImgError(false);
+    setPendingImagePath(null);
+    setCandidatePath(null);
   }, [product, open]);
 
-  // Reset error cuando cambia la URL
-  useEffect(() => { setImgError(false); }, [form.image_url]);
+  useEffect(() => { setImgError(false); }, [form.image_url, pendingImagePath]);
 
   const isValid = form.name && form.sku && form.category && form.price >= 0 && form.cost >= 0;
 
-  const handleSave = () => {
-    onSave(form);
-    onOpenChange(false);
-  };
-
-  /** Abre el selector de archivos nativo de Electron (si está disponible) */
+  // ── Seleccionar imagen desde Electron ──────────────────────────────────────
   const handleBrowse = async () => {
-    if (typeof window !== "undefined" && window.electronFiles?.openImage) {
-      const filePath = await window.electronFiles.openImage();
-      if (filePath) {
-        setForm({ ...form, image_url: filePath });
-      }
+    if (!isElectron) return;
+    const filePath = await window.electronFiles.openImage();
+    if (!filePath) return;
+
+    // ¿El producto ya tiene imagen? → pedir confirmación antes de reemplazar
+    if (form.image_url) {
+      setCandidatePath(filePath);
+      setShowReplaceConfirm(true);
+    } else {
+      // Sin imagen previa → aceptar directamente
+      setPendingImagePath(filePath);
     }
   };
 
-  const isElectron = typeof window !== "undefined" && !!window.electronFiles;
-  const previewSrc = toImgSrc(form.image_url);
+  // ── Confirmar reemplazo de imagen ─────────────────────────────────────────
+  const handleConfirmReplace = () => {
+    setPendingImagePath(candidatePath);
+    setCandidatePath(null);
+    setShowReplaceConfirm(false);
+  };
+
+  const handleCancelReplace = () => {
+    setCandidatePath(null);
+    setShowReplaceConfirm(false);
+  };
+
+  // ── Limpiar imagen ────────────────────────────────────────────────────────
+  const handleClearImage = () => {
+    setForm({ ...form, image_url: "" });
+    setPendingImagePath(null);
+  };
+
+  // ── Guardar producto ──────────────────────────────────────────────────────
+  const handleSave = async () => {
+    let finalImageUrl = form.image_url;
+
+    if (isElectron && pendingImagePath) {
+      const sku = form.sku || "producto";
+
+      // ¿Había imagen anterior? → reemplazar (borra la anterior automáticamente)
+      const hadImage = !!product?.image_url;
+      const fn = hadImage
+        ? await window.electronFiles.replaceImage(pendingImagePath, sku)
+        : await window.electronFiles.saveImage(pendingImagePath, sku);
+
+      if (fn?.success) {
+        finalImageUrl = fn.fileName;
+      }
+    }
+
+    onSave({ ...form, image_url: finalImageUrl });
+    onOpenChange(false);
+  };
+
+  // ── Preview de la imagen ──────────────────────────────────────────────────
+  // En Electron: si hay una ruta pendiente, mostrar local-file:// del archivo original.
+  // Si no, usar toImgSrc del valor guardado en DB.
+  let previewSrc = null;
+  if (pendingImagePath && isElectron) {
+    let normalized = pendingImagePath.replace(/\\/g, "/");
+    if (!normalized.startsWith("/")) normalized = "/" + normalized;
+    previewSrc = "local-file://" + normalized.split("/").map(s => encodeURIComponent(s)).join("/");
+  } else {
+    previewSrc = toImgSrc(form.image_url);
+  }
+
+  // Texto del campo de imagen para mostrar al usuario
+  const imageDisplayValue = pendingImagePath
+    ? pendingImagePath
+    : form.image_url;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>{product ? t("editarProducto") : t("nuevoProducto")}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4 py-4">
+    <>
+      {/* ── Modal de confirmación de reemplazo ───────────────────────────── */}
+      <AlertDialog open={showReplaceConfirm} onOpenChange={setShowReplaceConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Reemplazar imagen?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Este producto ya tiene una imagen asignada. Al continuar, la imagen anterior
+              será eliminada y reemplazada por la nueva. Esta acción no se puede deshacer.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelReplace}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={handleConfirmReplace}>Sí, reemplazar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
-          <div className="space-y-2">
-            <Label>{t("nombre")}</Label>
-            <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Coca Cola 600ml" />
-          </div>
+      {/* ── Formulario principal ─────────────────────────────────────────── */}
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{product ? t("editarProducto") : t("nuevoProducto")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
 
-          <div className="space-y-2">
-            <Label>{t("skuCodigo")}</Label>
-            <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value.toUpperCase() })} placeholder="COC-600" />
-          </div>
-
-          <div className="space-y-2">
-            <Label>{t("categoria")}</Label>
-            <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
-              <SelectTrigger>
-                <SelectValue placeholder={t("seleccionar")}>
-                  {form.category ? (categoryLabels[lang]?.[form.category] ?? form.category) : undefined}
-                </SelectValue>
-              </SelectTrigger>
-              <SelectContent>
-                {categoryKeys.map((key) => (
-                  <SelectItem key={key} value={key}>
-                    {categoryLabels[lang]?.[key] ?? key}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label>{t("precioVenta")}</Label>
-              <Input type="number" value={form.price} onFocus={(e) => e.target.select()}
-                onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
-                min={0} step={0.01} />
+              <Label>{t("nombre")}</Label>
+              <Input value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="Coca Cola 600ml" />
             </div>
-            <div className="space-y-2">
-              <Label>{t("precioCompra")}</Label>
-              <Input type="number" value={form.cost} onFocus={(e) => e.target.select()}
-                onChange={(e) => setForm({ ...form, cost: parseFloat(e.target.value) || 0 })}
-                min={0} step={0.01} />
-            </div>
-          </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            {!product && (
+            <div className="space-y-2">
+              <Label>{t("skuCodigo")}</Label>
+              <Input value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value.toUpperCase() })} placeholder="COC-600" />
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("categoria")}</Label>
+              <Select value={form.category} onValueChange={(v) => setForm({ ...form, category: v })}>
+                <SelectTrigger>
+                  <SelectValue placeholder={t("seleccionar")}>
+                    {form.category ? (categoryLabels[lang]?.[form.category] ?? form.category) : undefined}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {categoryKeys.map((key) => (
+                    <SelectItem key={key} value={key}>
+                      {categoryLabels[lang]?.[key] ?? key}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">
-                <Label>{t("stockActual")}</Label>
-                <Input type="number" value={form.stock}
-                  onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) || 0 })} min={0} />
+                <Label>{t("precioVenta")}</Label>
+                <Input type="number" value={form.price} onFocus={(e) => e.target.select()}
+                  onChange={(e) => setForm({ ...form, price: parseFloat(e.target.value) || 0 })}
+                  min={0} step={0.01} />
               </div>
-            )}
+              <div className="space-y-2">
+                <Label>{t("precioCompra")}</Label>
+                <Input type="number" value={form.cost} onFocus={(e) => e.target.select()}
+                  onChange={(e) => setForm({ ...form, cost: parseFloat(e.target.value) || 0 })}
+                  min={0} step={0.01} />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              {!product && (
+                <div className="space-y-2">
+                  <Label>{t("stockActual")}</Label>
+                  <Input type="number" value={form.stock}
+                    onChange={(e) => setForm({ ...form, stock: parseInt(e.target.value) || 0 })} min={0} />
+                </div>
+              )}
+              <div className="space-y-2">
+                <Label>{t("stockMinimo")}</Label>
+                <Input type="number" value={form.min_stock}
+                  onChange={(e) => setForm({ ...form, min_stock: parseInt(e.target.value) || 0 })} min={0} />
+              </div>
+            </div>
+
+            {/* ── Imagen ──────────────────────────────────────────────────── */}
             <div className="space-y-2">
-              <Label>{t("stockMinimo")}</Label>
-              <Input type="number" value={form.min_stock}
-                onChange={(e) => setForm({ ...form, min_stock: parseInt(e.target.value) || 0 })} min={0} />
-            </div>
-          </div>
+              <Label>{t("urlImagen")}</Label>
 
-          {/* ── Imagen ─────────────────────────────────────────────────────── */}
-          <div className="space-y-2">
-            <Label>{t("urlImagen")}</Label>
-
-            {/* Input + botón buscar */}
-            <div className="flex gap-2">
-              <Input
-                value={form.image_url}
-                onChange={(e) => setForm({ ...form, image_url: e.target.value })}
-                placeholder={isElectron ? "Ruta de archivo o URL…" : "https://…"}
-                className="flex-1 text-sm"
-              />
-              {form.image_url && (
-                <Button type="button" size="icon" variant="ghost"
-                  className="h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-destructive"
-                  onClick={() => setForm({ ...form, image_url: "" })}>
-                  <X className="w-4 h-4" />
-                </Button>
-              )}
-              {/* Botón "Buscar" solo en Electron */}
-              {isElectron && (
-                <Button type="button" size="icon" variant="outline"
-                  className="h-10 w-10 flex-shrink-0"
-                  title="Seleccionar imagen del disco"
-                  onClick={handleBrowse}>
-                  <FolderOpen className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-
-            {/* Preview de la imagen */}
-            {previewSrc && (
-              <div className="mt-2 rounded-xl overflow-hidden border border-border bg-muted/30 flex items-center justify-center" style={{ height: 120 }}>
-                {imgError ? (
-                  <div className="flex flex-col items-center gap-1 text-muted-foreground">
-                    <ImageOff className="w-7 h-7 opacity-40" />
-                    <span className="text-xs">No se pudo cargar la imagen</span>
-                  </div>
-                ) : (
-                  <img
-                    src={previewSrc}
-                    alt="preview"
-                    className="max-h-full max-w-full object-contain"
-                    onError={() => setImgError(true)}
-                  />
+              <div className="flex gap-2">
+                <Input
+                  value={imageDisplayValue}
+                  onChange={(e) => {
+                    // Edición manual: solo aplica para URLs http
+                    setPendingImagePath(null);
+                    setForm({ ...form, image_url: e.target.value });
+                  }}
+                  placeholder={isElectron ? "Seleccioná una imagen con el botón…" : "https://…"}
+                  className="flex-1 text-sm"
+                  readOnly={isElectron}
+                />
+                {imageDisplayValue && (
+                  <Button type="button" size="icon" variant="ghost"
+                    className="h-10 w-10 flex-shrink-0 text-muted-foreground hover:text-destructive"
+                    onClick={handleClearImage}>
+                    <X className="w-4 h-4" />
+                  </Button>
+                )}
+                {isElectron && (
+                  <Button type="button" size="icon" variant="outline"
+                    className="h-10 w-10 flex-shrink-0"
+                    title="Seleccionar imagen del disco"
+                    onClick={handleBrowse}>
+                    <FolderOpen className="w-4 h-4" />
+                  </Button>
                 )}
               </div>
-            )}
 
-            {/* Hint solo en Electron */}
-            {isElectron && (
-              <p className="text-xs text-muted-foreground">
-                Podés escribir la ruta directamente o usar <FolderOpen className="inline w-3 h-3 mx-0.5" /> para explorar.
-              </p>
-            )}
+              {/* Preview */}
+              {previewSrc && (
+                <div className="mt-2 rounded-xl overflow-hidden border border-border bg-muted/30 flex items-center justify-center" style={{ height: 120 }}>
+                  {imgError ? (
+                    <div className="flex flex-col items-center gap-1 text-muted-foreground">
+                      <ImageOff className="w-7 h-7 opacity-40" />
+                      <span className="text-xs">No se pudo cargar la imagen</span>
+                    </div>
+                  ) : (
+                    <img
+                      src={previewSrc}
+                      alt="preview"
+                      className="max-h-full max-w-full object-contain"
+                      onError={() => setImgError(true)}
+                    />
+                  )}
+                </div>
+              )}
+
+              {isElectron && (
+                <p className="text-xs text-muted-foreground">
+                  Usá <FolderOpen className="inline w-3 h-3 mx-0.5" /> para seleccionar una imagen del disco.
+                  La imagen se copiará automáticamente y estará disponible en todos los dispositivos.
+                </p>
+              )}
+            </div>
+
           </div>
-
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)}>{t("cancelar")}</Button>
-          <Button onClick={handleSave} disabled={!isValid}>{t("guardar")}</Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => onOpenChange(false)}>{t("cancelar")}</Button>
+            <Button onClick={handleSave} disabled={!isValid}>{t("guardar")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

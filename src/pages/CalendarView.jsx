@@ -14,8 +14,6 @@ export default function CalendarView() {
   const { t, lang } = useLanguage();
   const { currentTheme } = useTheme();
 
-  moment.locale(lang === "en" ? "en-gb" : "es");
-
   const [currentMonth, setCurrentMonth] = useState(moment());
   const [registers, setRegisters] = useState([]);
   const [sales, setSales] = useState([]);
@@ -81,9 +79,15 @@ export default function CalendarView() {
 
   const formatLongDate = (dateStr) => {
     if (!dateStr) return "";
-    return lang === "en"
-      ? moment(dateStr).format("dddd, MMMM D, YYYY")
-      : moment(dateStr).format("dddd, D [de] MMMM [de] YYYY");
+    const d = new Date(dateStr + "T00:00:00");
+    if (lang === "es") {
+      const weekday = d.toLocaleDateString("es-AR", { weekday: "long" });
+      const day     = d.getDate();
+      const month   = d.toLocaleDateString("es-AR", { month: "long" });
+      const year    = d.getFullYear();
+      return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${day} de ${month.charAt(0).toUpperCase() + month.slice(1)} de ${year}`;
+    }
+    return d.toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   };
 
   if (loading) return (
@@ -111,7 +115,12 @@ export default function CalendarView() {
             <ChevronLeft className="w-5 h-5" />
           </Button>
           <h2 className="font-bold text-xl capitalize text-white tracking-wide">
-            {currentMonth.format("MMMM YYYY")}
+            {(() => {
+              const d = currentMonth.toDate();
+              const month = d.toLocaleDateString(lang === "es" ? "es-AR" : "en-GB", { month: "long" });
+              const year = d.getFullYear();
+              return `${month.charAt(0).toUpperCase() + month.slice(1)} ${year}`;
+            })()}
           </h2>
           <Button
             variant="ghost"

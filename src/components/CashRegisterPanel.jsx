@@ -4,8 +4,16 @@ import { useLanguage } from "@/lib/LanguageContext";
 
 // Formatea moneda de forma compacta si el número es muy grande
 function formatMoney(value) {
-  if (Math.abs(value) >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
-  if (Math.abs(value) >= 100_000)   return `$${(value / 1_000).toFixed(0)}k`;
+  const abs = Math.abs(value);
+  if (abs >= 1_000_000) {
+    const v = value / 1_000_000;
+    // 2 decimales para distinguir ej: $1,55M vs $1,60M
+    const str = v.toFixed(2).replace('.', ',');
+    // quitar ceros finales: 1,50 → 1,5 / 1,00 → 1
+    const trimmed = str.replace(/,?0+$/, '');
+    return `$${trimmed}M`;
+  }
+  if (abs >= 1_000) return `$${(value / 1_000).toFixed(0)}K`;
   return `$${value.toFixed(2)}`;
 }
 

@@ -1,5 +1,5 @@
 import { fmtMoneda, fmtExacto } from "@/utils/currency";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,8 @@ import InventoryDialog from "../components/InventoryDialog";
 import CashRegisterPanel from "../components/CashRegisterPanel";
 import OpenRegisterDialog from "../components/OpenRegisterDialog";
 import moment from "moment";
+import "moment/locale/es";
+import "moment/locale/en-gb";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useTheme } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -255,9 +257,17 @@ export default function Dashboard() {
   const lowStock = products.filter((p) => p.stock > 0 && p.stock <= p.min_stock).length;
   const totalPurchasesToday = purchasesToday.reduce((sum, tr) => sum + (tr.total_cost || 0), 0);
 
-  const dateLabel = lang === "en"
-    ? moment().format("dddd, MMMM D, YYYY")
-    : moment().format("dddd, D [de] MMMM [de] YYYY");
+  const dateLabel = useMemo(() => {
+    const now = new Date();
+    if (lang === "es") {
+      const weekday = now.toLocaleDateString("es-AR", { weekday: "long" });
+      const day     = now.getDate();
+      const month   = now.toLocaleDateString("es-AR", { month: "long" });
+      const year    = now.getFullYear();
+      return `${weekday.charAt(0).toUpperCase() + weekday.slice(1)}, ${day} de ${month.charAt(0).toUpperCase() + month.slice(1)} de ${year}`;
+    }
+    return now.toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  }, [lang]);
 
   if (loading) return (
     <div className="flex items-center justify-center h-[60vh]">

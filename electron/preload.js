@@ -34,9 +34,20 @@ contextBridge.exposeInMainWorld('electronSettings', {
 contextBridge.exposeInMainWorld('electronFiles', {
   /** Abre un diálogo nativo para elegir una imagen. Devuelve la ruta absoluta o null. */
   openImage: () => ipcRenderer.invoke('dialog:openImageFile'),
+  /** Copia una imagen al directorio interno usando el SKU como nombre. */
+  saveImage:    (srcPath, sku) => ipcRenderer.invoke('productImage:save',    { srcPath, sku }),
+  /** Reemplaza la imagen existente de un producto (borra la anterior). */
+  replaceImage: (srcPath, sku) => ipcRenderer.invoke('productImage:replace', { srcPath, sku }),
+  /** Borra la imagen de un producto del directorio interno. */
+  deleteImage:  (sku)          => ipcRenderer.invoke('productImage:delete',  { sku }),
 });
 
 
 contextBridge.exposeInMainWorld('electronTrial', {
   status: () => ipcRenderer.invoke('trial:status'),
+});
+
+contextBridge.exposeInMainWorld('electronLicense', {
+  status:   ()    => ipcRenderer.invoke('license:status'),
+  activate: (key) => ipcRenderer.invoke('license:activate', key),
 });

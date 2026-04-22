@@ -192,6 +192,7 @@ const translations = {
     categoriaDefecto: "Categoría predeterminada (no se puede eliminar)",
     editarCategoria: "Editar",
     categoriaActualizada: "Categoría actualizada",
+    calculadora: "Calculadora",
   },
   en: {
     dashboard: "Dashboard", productos: "Products", ventas: "Sales",
@@ -287,6 +288,7 @@ const translations = {
     categoriaDefecto: "Default category (cannot be deleted)",
     editarCategoria: "Edit",
     categoriaActualizada: "Category updated",
+    calculadora: "Calculator",
   }
 };
 

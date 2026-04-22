@@ -68,6 +68,7 @@ export const localEntities = {
   CashRegister:         createEntity('CashRegister'),
   CashSale:             createEntity('CashSale'),
   InventoryTransaction: createEntity('InventoryTransaction'),
+  PriceMarkup:          createEntity('PriceMarkup'),
 };
 
 export const exportAllData = () => db.exportAll();

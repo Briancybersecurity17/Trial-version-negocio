@@ -19,6 +19,7 @@ import CalendarView from './pages/CalendarView';
 import Gastos from './pages/Gastos';
 import Inventario from './pages/Inventario';
 import Mermas from './pages/Mermas';
+import Calculadora from './pages/Calculadora';
 import Opciones from './pages/Opciones';
 import Account from './pages/Account';
 import LicenseGuard from './LicenseGuard';
@@ -61,6 +62,7 @@ function AppRoutes() {
           <Route path="/calendario"  element={<CalendarView />} />
           <Route path="/opciones"    element={<Opciones />} />
           <Route path="/account"     element={<Account />} />
+          <Route path="/calculadora" element={<Calculadora />} />
           <Route path="*"            element={<PageNotFound />} />
         </Route>
       </Routes>

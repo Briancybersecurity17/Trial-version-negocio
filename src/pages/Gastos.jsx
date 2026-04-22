@@ -8,7 +8,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, ShoppingBag, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle } from "lucide-react";
+import { Search, ShoppingBag, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle, MessageSquare } from "lucide-react";
 import moment from "moment";
 import "moment/locale/es";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -229,10 +229,18 @@ export default function Gastos() {
                               />
                             </div>
                           ) : (
-                            <p className="text-xs text-muted-foreground">
-                              {tr.quantity} {t("unidades")} x {fmtMoneda(tr.unit_cost || 0)}
-                              {tr.reason && ` · ${tReason(tr.reason)}`}
-                            </p>
+                            <div className="space-y-0.5">
+                              <p className="text-xs text-muted-foreground">
+                                {tr.quantity} {t("unidades")} x {fmtMoneda(tr.unit_cost || 0)}
+                                {tr.reason && ` · ${tReason(tr.reason)}`}
+                              </p>
+                              {tr.notes && (
+                                <p className="text-xs text-muted-foreground/70 flex items-center gap-1">
+                                  <MessageSquare className="w-3 h-3 flex-shrink-0" />
+                                  <span className="italic">{tr.notes}</span>
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
 

@@ -15,6 +15,8 @@ export default function Opciones() {
   const { theme, setTheme, currentTheme, darkMode, setDarkMode } = useTheme();
   const { resetApp } = useAuth();
   const [exporting, setExporting] = useState(false);
+  const [exportingJson, setExportingJson] = useState(false);
+  const [showBackupPrompt, setShowBackupPrompt] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
@@ -148,16 +150,52 @@ export default function Opciones() {
     }
   };
 
+  // ── Exportar JSON (backup completo) ──────────────────────────────────────
+  const handleExportJson = async () => {
+    setExportingJson(true);
+    try {
+      const [products, sales, transactions, registers] = await Promise.all([
+        base44.entities.Product.list(null, 5000),
+        base44.entities.CashSale.list(null, 10000),
+        base44.entities.InventoryTransaction.list(null, 10000),
+        base44.entities.CashRegister.list(null, 5000),
+      ]);
+      const backup = {
+        exportDate: new Date().toISOString(),
+        Product: products,
+        CashSale: sales,
+        InventoryTransaction: transactions,
+        CashRegister: registers,
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement("a");
+      a.href     = url;
+      a.download = `mi-negocio-backup_${new Date().toISOString().slice(0, 10)}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success(lang === "en" ? "Backup downloaded" : "Backup descargado");
+    } catch (e) {
+      console.error(e);
+      toast.error(lang === "en" ? "Export error" : "Error al exportar");
+    } finally {
+      setExportingJson(false);
+    }
+  };
+
   // ── Reset total de la app ─────────────────────────────────────────────────
-  const handleReset = async () => {
+  // Primero muestra el prompt de backup; el reset real ocurre en handleConfirmReset
+  const handleReset = () => {
+    setShowBackupPrompt(true);
+  };
+
+  const handleConfirmReset = async () => {
+    setShowBackupPrompt(false);
     setResetting(true);
-    await handleExport();
     try {
       const result = await resetApp();
       if (result.success) {
         toast.success(lang === "en" ? "App fully reset. Redirecting to login…" : "App reiniciada. Redirigiendo al inicio…");
-        // El logout ya lo hizo resetApp internamente (limpia sesión),
-        // el router detectará usuario null y enviará al login automáticamente.
       } else {
         toast.error(result.error || "Error al reiniciar");
       }
@@ -219,6 +257,7 @@ export default function Opciones() {
   };
 
   return (
+    <>
     <div className="p-4 lg:p-8 space-y-6 max-w-2xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -385,13 +424,23 @@ export default function Opciones() {
           <p>📦 {lang === "en" ? "Products, Sales, Expenses" : "Productos, Ventas, Gastos"}</p>
           <p>📊 {lang === "en" ? "Returns, Losses, Summary" : "Devoluciones, Mermas, Resumen"}</p>
         </div>
-        <button onClick={handleExport} disabled={exporting}
-          className="w-full py-3 px-4 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 shadow-md"
-          style={{ background: currentTheme?.heroGradient }}
-        >
-          <Download className="w-4 h-4" />
-          {exporting ? t("exportandoBtn") : t("exportarBtn")}
-        </button>
+        <div className="flex flex-col sm:flex-row gap-3">
+          <button onClick={handleExport} disabled={exporting}
+            className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold text-white flex items-center justify-center gap-2 transition-all hover:opacity-90 disabled:opacity-50 shadow-md"
+            style={{ background: currentTheme?.heroGradient }}
+          >
+            <Download className="w-4 h-4" />
+            {exporting ? t("exportandoBtn") : t("exportarBtn")}
+          </button>
+          <button onClick={handleExportJson} disabled={exportingJson}
+            className="flex-1 py-3 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-all hover:opacity-80 disabled:opacity-50 border border-border bg-muted"
+          >
+            <HardDrive className="w-4 h-4" />
+            {exportingJson
+              ? (lang === "en" ? "Exporting..." : "Exportando...")
+              : (lang === "en" ? "Backup JSON" : "Backup JSON")}
+          </button>
+        </div>
       </div>
 
       {/* Categorías */}
@@ -547,7 +596,6 @@ export default function Opciones() {
                 ? "⚠️ All users will be deleted. The admin account will return to its default state (user: admin / password: admin)."
                 : "⚠️ Se eliminarán todos los usuarios. La cuenta admin volverá a su estado inicial (usuario: admin / contraseña: admin)."}
             </p>
-            <p className="text-xs text-primary text-center font-medium">{lang === "en" ? "⚠️ A backup CSV will be downloaded first." : "⚠️ Se descargará un CSV de respaldo primero."}</p>
             <div className="flex gap-3">
               <Button variant="outline" className="flex-1" onClick={() => setShowResetConfirm(false)} disabled={resetting}>{t("cancelar")}</Button>
               <Button variant="destructive" className="flex-1" onClick={handleReset} disabled={resetting}>
@@ -558,5 +606,65 @@ export default function Opciones() {
         )}
       </div>
     </div>
+
+      {/* ── Modal de backup previo al reset ────────────────────────────────── */}
+      {showBackupPrompt && (
+        <div style={{
+          position: "fixed", inset: 0, zIndex: 9999,
+          background: "rgba(0,0,0,0.6)", backdropFilter: "blur(4px)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          padding: "1rem",
+        }}>
+          <div className="bg-card border border-border rounded-2xl p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-amber-500/20 flex items-center justify-center flex-shrink-0">
+                <HardDrive className="w-5 h-5 text-amber-500" />
+              </div>
+              <div>
+                <h2 className="font-bold text-base">
+                  {lang === "en" ? "Back up your data first" : "¿Querés hacer un backup antes?"}
+                </h2>
+                <p className="text-xs text-muted-foreground">
+                  {lang === "en"
+                    ? "Once reset, all data is permanently deleted and cannot be recovered."
+                    : "Una vez reiniciada, todos los datos se borran para siempre y no se pueden recuperar."}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={async () => { await handleExportJson(); }}
+                disabled={exportingJson}
+                className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border border-border bg-muted hover:bg-muted/70 transition-all disabled:opacity-50"
+              >
+                <HardDrive className="w-4 h-4" />
+                {exportingJson
+                  ? (lang === "en" ? "Downloading..." : "Descargando...")
+                  : (lang === "en" ? "Download JSON backup" : "Descargar backup JSON")}
+              </button>
+              <button
+                onClick={async () => { await handleExport(); }}
+                disabled={exporting}
+                className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border border-border bg-muted hover:bg-muted/70 transition-all disabled:opacity-50"
+              >
+                <Download className="w-4 h-4" />
+                {exporting
+                  ? (lang === "en" ? "Downloading..." : "Descargando...")
+                  : (lang === "en" ? "Download Excel backup" : "Descargar backup Excel")}
+              </button>
+            </div>
+            <div className="border-t border-border pt-3 flex gap-3">
+              <Button variant="outline" className="flex-1" onClick={() => setShowBackupPrompt(false)}>
+                {lang === "en" ? "Cancel" : "Cancelar"}
+              </Button>
+              <Button variant="destructive" className="flex-1" onClick={handleConfirmReset} disabled={resetting}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                {lang === "en" ? "Reset anyway" : "Ya hice el backup, reiniciar"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

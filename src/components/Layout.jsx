@@ -2,6 +2,7 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import { LayoutDashboard, Package, Calendar, Receipt, ShoppingBag, Menu, X, Store, Settings, Boxes, Trash2, Wifi, LogOut, User, ChevronRight } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
+import { Calculator } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useTheme } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
@@ -35,6 +36,7 @@ export default function Layout() {
     { path: "/inventario",  labelKey: "inventario",   icon: Boxes,           always: true },
     { path: "/mermas",      labelKey: "mermas",       icon: Trash2,          always: true },
     { path: "/calendario",  labelKey: "calendario",   icon: Calendar,        always: true },
+    { path: "/calculadora", labelKey: "calculadora",  icon: Calculator,      always: true },
   ].filter(i => i.always);
 
   const NavLink = ({ item, onClick }) => {

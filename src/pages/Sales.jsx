@@ -8,7 +8,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Receipt, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle } from "lucide-react";
+import { Search, Receipt, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle, MessageSquare } from "lucide-react";
 import moment from "moment";
 import "moment/locale/es";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -196,10 +196,17 @@ export default function Sales() {
                               />
                             </div>
                           ) : (
-                            <p className="text-xs text-muted-foreground">
-                              {sale.quantity} x {fmtMoneda(sale.unit_price)}
-                              {sale.notes && ` - ${sale.notes}`}
-                            </p>
+                            <div className="space-y-0.5">
+                              <p className="text-xs text-muted-foreground">
+                                {sale.quantity} x {fmtMoneda(sale.unit_price)}
+                              </p>
+                              {sale.notes && (
+                                <p className="text-xs text-muted-foreground/70 flex items-center gap-1">
+                                  <MessageSquare className="w-3 h-3 flex-shrink-0" />
+                                  <span className="italic">{sale.notes}</span>
+                                </p>
+                              )}
+                            </div>
                           )}
                         </div>
 

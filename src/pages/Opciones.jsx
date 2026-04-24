@@ -28,11 +28,29 @@ export default function Opciones() {
   const [businessNameInput, setBusinessNameInput] = useState(
     () => localStorage.getItem('negocio_nombre') || 'Mi Negocio'
   );
-  const handleSaveBusinessName = () => {
+  const handleSaveBusinessName = async () => {
     const val = businessNameInput.trim();
     if (!val) return;
     localStorage.setItem('negocio_nombre', val);
     setBusinessName(val);
+    try {
+      if (isElectron) {
+        const current = await window.electronSettings.get();
+        await window.electronSettings.set({ ...current, businessName: val });
+      } else {
+        const token = localStorage.getItem('auth_token') || '';
+        const current = await fetch('/api/settings/get', {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then(r => r.json()).catch(() => ({}));
+        await fetch('/api/settings/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ ...current, businessName: val }),
+        });
+      }
+    } catch (e) {
+      console.warn('No se pudo sincronizar el nombre del negocio con el backend:', e);
+    }
     toast.success(lang === 'en' ? 'Business name saved' : 'Nombre guardado');
   };
 
@@ -154,30 +172,44 @@ export default function Opciones() {
   const handleExportJson = async () => {
     setExportingJson(true);
     try {
-      const [products, sales, transactions, registers] = await Promise.all([
-        base44.entities.Product.list(null, 5000),
-        base44.entities.CashSale.list(null, 10000),
-        base44.entities.InventoryTransaction.list(null, 10000),
-        base44.entities.CashRegister.list(null, 5000),
-      ]);
-      const backup = {
-        exportDate: new Date().toISOString(),
-        Product: products,
-        CashSale: sales,
-        InventoryTransaction: transactions,
-        CashRegister: registers,
-      };
-      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
-      const url  = URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href     = url;
-      a.download = `mi-negocio-backup_${new Date().toISOString().slice(0, 10)}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-      toast.success(lang === "en" ? "Backup downloaded" : "Backup descargado");
+      if (isElectron) {
+        const result = await window.electronDB.exportAll();
+        if (result?.success) {
+          toast.success(lang === 'en' ? `Backup saved in: ${result.destDir}` : `Backup guardado en: ${result.destDir}`);
+        }
+      } else {
+        const token = localStorage.getItem('auth_token') || '';
+        const [products, sales, transactions, registers, priceMarkup, settings] = await Promise.all([
+          base44.entities.Product.list(null, 5000),
+          base44.entities.CashSale.list(null, 10000),
+          base44.entities.InventoryTransaction.list(null, 10000),
+          base44.entities.CashRegister.list(null, 5000),
+          base44.entities.PriceMarkup.list(null, 1000),
+          fetch('/api/settings/get', { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.json()).catch(() => ({})),
+        ]);
+        const backup = {
+          backupVersion: 2,
+          exportDate: new Date().toISOString(),
+          Product: products,
+          CashSale: sales,
+          InventoryTransaction: transactions,
+          CashRegister: registers,
+          PriceMarkup: priceMarkup,
+          _settings: settings,
+        };
+        const blob = new Blob([JSON.stringify(backup, null, 2)], { type: 'application/json' });
+        const url  = URL.createObjectURL(blob);
+        const a    = document.createElement('a');
+        a.href     = url;
+        a.download = `mi-negocio-backup_${new Date().toISOString().slice(0, 10)}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success(lang === 'en' ? 'Backup downloaded' : 'Backup descargado');
+      }
     } catch (e) {
       console.error(e);
-      toast.error(lang === "en" ? "Export error" : "Error al exportar");
+      toast.error(lang === 'en' ? 'Export error' : 'Error al exportar');
     } finally {
       setExportingJson(false);
     }

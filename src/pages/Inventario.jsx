@@ -125,6 +125,7 @@ export default function Inventario() {
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-gradient-to-br from-card to-card/95 overflow-hidden">
+          {/* Header colapsable */}
           <button
             onClick={() => setShowTable(!showTable)}
             className="w-full flex items-center justify-between px-5 py-4 hover:bg-muted/20 transition-colors border-b border-border"
@@ -138,81 +139,164 @@ export default function Inventario() {
               <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${showTable ? "rotate-180" : ""}`} />
             </div>
           </button>
+
           {showTable && (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border bg-gradient-to-r from-muted/30 to-muted/20">
-                    <th className="text-left p-4 font-medium text-muted-foreground">{t("producto")}</th>
-                    <th className="text-left p-4 font-medium text-muted-foreground hidden md:table-cell">{t("categoria")}</th>
-                    <th className="text-right p-4 font-medium text-muted-foreground">{t("unidadesEnStock")}</th>
-                    <th className="text-right p-4 font-medium text-muted-foreground hidden sm:table-cell">{t("valorUnitario")}</th>
-                    <th className="text-right p-4 font-medium text-muted-foreground">{t("valorStock")}</th>
-                    <th className="text-right p-4 font-medium text-muted-foreground hidden md:table-cell">{t("compras")}</th>
-                    <th className="text-right p-4 font-medium text-muted-foreground hidden md:table-cell">{t("devol")}</th>
-                    <th className="text-right p-4 font-medium text-muted-foreground hidden md:table-cell">{t("ajustes")}</th>
-                    <th className="text-right p-4 font-medium text-muted-foreground hidden md:table-cell">{t("otros")}</th>
-                    <th className="text-right p-4 font-medium text-muted-foreground hidden md:table-cell">{t("entradas")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map((product) => {
-                    const valor = getValor(product);
-                    const purchaseQty = comprasByProduct[product.id] || 0;
-                    const returnsQty = devolucionesByProduct[product.id] || 0;
-                    const adjustQty = ajustesByProduct[product.id] || 0;
-                    const otherQty = otrosByProduct[product.id] || 0;
-                    const totalQty = entradasByProduct[product.id] || 0;
-                    return (
-                      <tr key={product.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
-                        <td className="p-4">
-                          <p className="font-medium">{product.name}</p>
+            <>
+              {/* ── MOBILE: tarjetas (< md) ── */}
+              <div className="md:hidden divide-y divide-border">
+                {filtered.map((product) => {
+                  const valor = getValor(product);
+                  const purchaseQty = comprasByProduct[product.id] || 0;
+                  const returnsQty  = devolucionesByProduct[product.id] || 0;
+                  const adjustQty   = ajustesByProduct[product.id] || 0;
+                  const otherQty    = otrosByProduct[product.id] || 0;
+                  const totalQty    = entradasByProduct[product.id] || 0;
+                  const stockColor  = product.stock === 0
+                    ? "text-destructive"
+                    : product.stock <= product.min_stock
+                    ? "text-warning"
+                    : "text-foreground";
+                  return (
+                    <div key={product.id} className="p-4 space-y-3">
+                      {/* Nombre + categoría */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <p className="font-semibold text-sm leading-tight">{product.name}</p>
                           <p className="text-xs text-muted-foreground">{product.sku}</p>
-                        </td>
-                        <td className="p-4 hidden md:table-cell">
-                          <span className="px-2 py-1 rounded-md bg-muted text-xs font-medium">{tCat(product.category)}</span>
-                        </td>
-                        <td className="p-4 text-right">
-                          <span className={`font-semibold ${product.stock === 0 ? "text-destructive" : product.stock <= product.min_stock ? "text-warning" : ""}`}>
-                            {product.stock}
-                          </span>
-                        </td>
-                        <td className="p-4 text-right text-muted-foreground hidden sm:table-cell">{fmtMoneda((product.cost || 0))}</td>
-                        <td className="p-4 text-right font-bold text-primary">{fmtMoneda(valor)}</td>
-                        <td className="p-4 text-right hidden md:table-cell">
-                          {purchaseQty > 0 ? <span className="text-foreground font-semibold">+{purchaseQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
-                        </td>
-                        <td className="p-4 text-right hidden md:table-cell">
-                          {returnsQty > 0 ? <span className="text-success font-semibold">+{returnsQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
-                        </td>
-                        <td className="p-4 text-right hidden md:table-cell">
-                          {adjustQty > 0 ? <span className="text-primary font-semibold">+{adjustQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
-                        </td>
-                        <td className="p-4 text-right hidden md:table-cell">
-                          {otherQty > 0 ? <span className="text-warning font-semibold">+{otherQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
-                        </td>
-                        <td className="p-4 text-right hidden md:table-cell">
-                          {totalQty > 0 ? <span className="text-foreground font-semibold">+{totalQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-                <tfoot>
-                  <tr className="border-t-2 border-border bg-muted/30">
-                    <td className="p-4 font-bold" colSpan={2}>TOTAL</td>
-                    <td className="p-4 text-right font-bold"></td>
-                    <td className="p-4 text-right font-bold hidden sm:table-cell"></td>
-                    <td className="p-4 text-right font-bold text-primary text-lg">{fmtMoneda(totalInventario)}</td>
-                    <td className="p-4 hidden md:table-cell"></td>
-                    <td className="p-4 hidden md:table-cell"></td>
-                    <td className="p-4 hidden md:table-cell"></td>
-                    <td className="p-4 hidden md:table-cell"></td>
-                    <td className="p-4 hidden md:table-cell"></td>
-                  </tr>
-                </tfoot>
-              </table>
-            </div>
+                        </div>
+                        <span className="shrink-0 px-2 py-0.5 rounded-md bg-muted text-xs font-medium">
+                          {tCat(product.category)}
+                        </span>
+                      </div>
+
+                      {/* Métricas principales en 3 columnas */}
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div className="rounded-lg bg-muted/40 px-2 py-2">
+                          <p className="text-xs text-muted-foreground mb-0.5">{t("unidadesEnStock")}</p>
+                          <p className={`font-bold text-base ${stockColor}`}>{product.stock}</p>
+                        </div>
+                        <div className="rounded-lg bg-muted/40 px-2 py-2">
+                          <p className="text-xs text-muted-foreground mb-0.5">{t("valorUnitario")}</p>
+                          <p className="font-semibold text-sm">{fmtMoneda(product.cost || 0)}</p>
+                        </div>
+                        <div className="rounded-lg bg-primary/10 border border-primary/20 px-2 py-2">
+                          <p className="text-xs text-muted-foreground mb-0.5">{t("valorStock")}</p>
+                          <p className="font-bold text-sm text-primary">{fmtMoneda(valor)}</p>
+                        </div>
+                      </div>
+
+                      {/* Movimientos (solo si hay alguno) */}
+                      {(purchaseQty + returnsQty + adjustQty + otherQty) > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {purchaseQty > 0 && (
+                            <span className="text-xs bg-muted rounded-full px-2.5 py-1 font-medium">
+                              {t("compras")}: <span className="text-foreground font-bold">+{purchaseQty}</span>
+                            </span>
+                          )}
+                          {returnsQty > 0 && (
+                            <span className="text-xs bg-success/10 text-success rounded-full px-2.5 py-1 font-medium">
+                              {t("devol")}: +{returnsQty}
+                            </span>
+                          )}
+                          {adjustQty > 0 && (
+                            <span className="text-xs bg-primary/10 text-primary rounded-full px-2.5 py-1 font-medium">
+                              {t("ajustes")}: +{adjustQty}
+                            </span>
+                          )}
+                          {otherQty > 0 && (
+                            <span className="text-xs bg-warning/10 text-warning rounded-full px-2.5 py-1 font-medium">
+                              {t("otros")}: +{otherQty}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+
+                {/* Footer mobile */}
+                <div className="px-4 py-3 bg-muted/30 border-t-2 border-border flex items-center justify-between">
+                  <span className="font-bold text-sm">TOTAL</span>
+                  <span className="font-bold text-primary text-lg">{fmtMoneda(totalInventario)}</span>
+                </div>
+              </div>
+
+              {/* ── DESKTOP: tabla completa (>= md) ── */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-border bg-gradient-to-r from-muted/30 to-muted/20">
+                      <th className="text-left p-4 font-medium text-muted-foreground">{t("producto")}</th>
+                      <th className="text-left p-4 font-medium text-muted-foreground">{t("categoria")}</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">{t("unidadesEnStock")}</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">{t("valorUnitario")}</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">{t("valorStock")}</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">{t("compras")}</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">{t("devol")}</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">{t("ajustes")}</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">{t("otros")}</th>
+                      <th className="text-right p-4 font-medium text-muted-foreground">{t("entradas")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map((product) => {
+                      const valor = getValor(product);
+                      const purchaseQty = comprasByProduct[product.id] || 0;
+                      const returnsQty  = devolucionesByProduct[product.id] || 0;
+                      const adjustQty   = ajustesByProduct[product.id] || 0;
+                      const otherQty    = otrosByProduct[product.id] || 0;
+                      const totalQty    = entradasByProduct[product.id] || 0;
+                      return (
+                        <tr key={product.id} className="border-b border-border last:border-0 hover:bg-muted/20 transition-colors">
+                          <td className="p-4">
+                            <p className="font-medium">{product.name}</p>
+                            <p className="text-xs text-muted-foreground">{product.sku}</p>
+                          </td>
+                          <td className="p-4">
+                            <span className="px-2 py-1 rounded-md bg-muted text-xs font-medium">{tCat(product.category)}</span>
+                          </td>
+                          <td className="p-4 text-right">
+                            <span className={`font-semibold ${product.stock === 0 ? "text-destructive" : product.stock <= product.min_stock ? "text-warning" : ""}`}>
+                              {product.stock}
+                            </span>
+                          </td>
+                          <td className="p-4 text-right text-muted-foreground">{fmtMoneda(product.cost || 0)}</td>
+                          <td className="p-4 text-right font-bold text-primary">{fmtMoneda(valor)}</td>
+                          <td className="p-4 text-right">
+                            {purchaseQty > 0 ? <span className="text-foreground font-semibold">+{purchaseQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
+                          </td>
+                          <td className="p-4 text-right">
+                            {returnsQty > 0 ? <span className="text-success font-semibold">+{returnsQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
+                          </td>
+                          <td className="text-right p-4">
+                            {adjustQty > 0 ? <span className="text-primary font-semibold">+{adjustQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
+                          </td>
+                          <td className="p-4 text-right">
+                            {otherQty > 0 ? <span className="text-warning font-semibold">+{otherQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
+                          </td>
+                          <td className="p-4 text-right">
+                            {totalQty > 0 ? <span className="text-foreground font-semibold">+{totalQty} {t("unidadesLabel")}</span> : <span className="text-muted-foreground">—</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  <tfoot>
+                    <tr className="border-t-2 border-border bg-muted/30">
+                      <td className="p-4 font-bold" colSpan={2}>TOTAL</td>
+                      <td className="p-4 text-right font-bold"></td>
+                      <td className="p-4 text-right font-bold"></td>
+                      <td className="p-4 text-right font-bold text-primary text-lg">{fmtMoneda(totalInventario)}</td>
+                      <td className="p-4"></td>
+                      <td className="p-4"></td>
+                      <td className="p-4"></td>
+                      <td className="p-4"></td>
+                      <td className="p-4"></td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </>
           )}
         </div>
       )}

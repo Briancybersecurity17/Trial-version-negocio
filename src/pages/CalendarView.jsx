@@ -1,4 +1,4 @@
-import { fmtMoneda } from "@/utils/currency";
+import { fmtMoneda, fmtExacto } from "@/utils/currency";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -227,14 +227,14 @@ export default function CalendarView() {
                   <DollarSign className="w-3 h-3" />
                   {t("apertura")}
                 </div>
-                <p className="text-xl font-bold">{fmtMoneda(selectedReg.opening_balance)}</p>
+                <p className="text-xl font-bold">{fmtExacto(selectedReg.opening_balance)}</p>
               </div>
               <div className="rounded-xl bg-primary/5 p-4">
                 <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3" />
                   {t("ventasDelDia")}
                 </div>
-                <p className="text-xl font-bold text-primary">{fmtMoneda(selectedTotal)}</p>
+                <p className="text-xl font-bold text-primary">{fmtExacto(selectedTotal)}</p>
               </div>
               <div className="rounded-xl bg-success/5 p-4">
                 <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
@@ -243,8 +243,8 @@ export default function CalendarView() {
                 </div>
                 <p className="text-xl font-bold text-success">
                   {selectedReg.status === "closed"
-                    ? fmtMoneda(selectedReg.closing_balance)
-                    : fmtMoneda(selectedReg.opening_balance + selectedTotal)}
+                    ? fmtExacto(selectedReg.closing_balance)
+                    : fmtExacto(selectedReg.opening_balance + selectedTotal)}
                 </p>
               </div>
             </div>

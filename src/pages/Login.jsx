@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useTheme } from '@/lib/ThemeContext';
 import { Store, Eye, EyeOff, Lock, User, Sparkles } from 'lucide-react';
@@ -12,7 +12,28 @@ export default function Login() {
   const [error, setError]       = useState('');
   const [loading, setLoading]   = useState(false);
 
-  const businessName = localStorage.getItem('negocio_nombre') || 'Mi Negocio';
+  const isElectron = typeof window !== 'undefined' && !!window.electronDB;
+  const [businessName, setBusinessName] = useState(
+    () => localStorage.getItem('negocio_nombre') || 'Mi Negocio'
+  );
+
+  // Sincronizar el nombre del negocio desde el backend al cargar el login
+  useEffect(() => {
+    if (isElectron) {
+      window.electronSettings?.get().then(s => {
+        const name = s?.businessName?.trim();
+        if (name) { setBusinessName(name); localStorage.setItem('negocio_nombre', name); }
+      }).catch(() => {});
+    } else if (window.location.protocol === 'http:') {
+      fetch('/api/public/config')
+        .then(r => r.json())
+        .then(s => {
+          const name = s?.businessName?.trim();
+          if (name) { setBusinessName(name); localStorage.setItem('negocio_nombre', name); }
+        })
+        .catch(() => {});
+    }
+  }, []);
 
   const from = currentTheme?.from || '#f97316';
   const to   = currentTheme?.to   || '#fbbf24';

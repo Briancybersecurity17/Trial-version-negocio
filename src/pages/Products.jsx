@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Search, Plus, Pencil, Trash2, Package } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Package, ArrowUpAZ, ArrowDownAZ } from "lucide-react";
 import StockBadge from "../components/StockBadge";
 import { toImgSrc } from "@/utils/localImage";
 import ProductFormDialog from "../components/ProductFormDialog";
@@ -26,6 +26,7 @@ export default function Products() {
   const [editProduct, setEditProduct] = useState(null);
   const [invProduct, setInvProduct] = useState(null);
   const [deleteProduct, setDeleteProduct] = useState(null);
+  const [sortOrder, setSortOrder] = useState(null); // null | 'asc' | 'desc'
 
   const loadProducts = async () => {
     setLoading(true);
@@ -161,6 +162,10 @@ export default function Products() {
       normalize(p.sku).includes(normalize(search));
     const matchCategory = category === "ALL" || p.category === category;
     return matchSearch && matchCategory;
+  }).sort((a, b) => {
+    if (!sortOrder) return 0;
+    const cmp = a.name.localeCompare(b.name, lang === "es" ? "es" : "en", { sensitivity: "base" });
+    return sortOrder === "asc" ? cmp : -cmp;
   });
 
   if (loading) return (
@@ -199,6 +204,21 @@ export default function Products() {
             ))}
           </SelectContent>
         </Select>
+        <Button
+          variant="outline"
+          className="w-full sm:w-auto flex items-center justify-center gap-2"
+          onClick={() => setSortOrder(o => o === "asc" ? "desc" : o === "desc" ? null : "asc")}
+          title={sortOrder === "asc" ? "A → Z" : sortOrder === "desc" ? "Z → A" : lang === "es" ? "Ordenar por nombre" : "Sort by name"}
+        >
+          {sortOrder === "desc"
+            ? <ArrowDownAZ className="w-4 h-4" />
+            : <ArrowUpAZ className="w-4 h-4" />}
+          <span className="text-sm">
+            {sortOrder === "asc"  ? "A → Z"
+           : sortOrder === "desc" ? "Z → A"
+           : lang === "es" ? "Ordenar" : "Sort"}
+          </span>
+        </Button>
       </div>
 
       {filtered.length === 0 ? (

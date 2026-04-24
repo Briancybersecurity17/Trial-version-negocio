@@ -228,7 +228,7 @@ export default function Products() {
         </div>
       ) : (
         <div className="rounded-2xl border border-border bg-card overflow-hidden">
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto overflow-y-auto max-h-[60vh]">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">

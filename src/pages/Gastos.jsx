@@ -8,7 +8,8 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, ShoppingBag, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle, MessageSquare } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Search, ShoppingBag, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle, MessageSquare, ChevronDown } from "lucide-react";
 import moment from "moment";
 import "moment/locale/es";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -26,9 +27,9 @@ export default function Gastos() {
   const [editQty, setEditQty] = useState("");
   const [editCost, setEditCost] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [openDays, setOpenDays] = useState(new Set());
 
-  useEffect(() => {
-  }, [lang]);
+  useEffect(() => {}, [lang]);
 
   const loadTransactions = async () => {
     setLoading(true);
@@ -71,6 +72,21 @@ export default function Gastos() {
   });
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
 
+  useEffect(() => {
+    if (sortedDates.length > 0 && openDays.size === 0) {
+      setOpenDays(new Set([sortedDates[0]]));
+    }
+  }, [sortedDates.length]);
+
+  const toggleDay = (date) => {
+    setOpenDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(date)) next.delete(date);
+      else next.add(date);
+      return next;
+    });
+  };
+
   const formatDate = (date) => {
     if (date === "__nodate__") return lang === "en" ? "No date" : "Sin fecha";
     const d = new Date(date + "T00:00:00");
@@ -112,7 +128,6 @@ export default function Gastos() {
 
     const newTotal = newQty * newCost;
 
-    // Actualizar la transaccion
     await base44.entities.InventoryTransaction.update(tr.id, {
       quantity:   newQty,
       unit_cost:  newCost,
@@ -120,7 +135,6 @@ export default function Gastos() {
       stock_after: (tr.stock_before || 0) + newQty,
     });
 
-    // Sincronizar el stock real del producto
     const products = await base44.entities.Product.filter({ id: tr.product_id });
     if (products.length > 0) {
       const prod = products[0];
@@ -135,7 +149,6 @@ export default function Gastos() {
   };
 
   const handleDelete = async (tr) => {
-    // Al eliminar una compra, descontar las unidades del stock
     const products = await base44.entities.Product.filter({ id: tr.product_id });
     if (products.length > 0) {
       const prod = products[0];
@@ -187,101 +200,112 @@ export default function Gastos() {
           <p className="text-sm">{t("ingresarStockParaVer")}</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {sortedDates.map((date) => {
             const dayItems = grouped[date];
             const dayTotal = dayItems.reduce((s, tr) => s + getTotal(tr), 0);
+            const isOpen = openDays.has(date);
             return (
-              <div key={date} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-muted-foreground capitalize">{formatDate(date)}</h3>
-                  <span className="text-sm font-bold">{fmtMoneda(dayTotal)}</span>
-                </div>
-                <div className="rounded-2xl border border-border bg-gradient-to-br from-card to-card/95 overflow-hidden divide-y divide-border">
-                  {dayItems.map((tr) => {
-                    const isEditing = editingId === tr.id;
-                    const previewTotal = (parseFloat(editCost) || 0) * (parseInt(editQty) || 0);
-                    return (
-                      <div key={tr.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{tr.product_name}</p>
-                          {isEditing ? (
-                            <div className="flex items-center gap-2 mt-1 flex-wrap">
-                              <Input
-                                type="number"
-                                value={editQty}
-                                onChange={(e) => setEditQty(e.target.value)}
-                                onFocus={(e) => e.target.select()}
-                                className="h-7 w-20 text-xs"
-                                min={1}
-                                placeholder={t("unidades")}
-                                autoFocus
-                              />
-                              <span className="text-xs text-muted-foreground">x</span>
-                              <Input
-                                type="number"
-                                value={editCost}
-                                onChange={(e) => setEditCost(e.target.value)}
-                                onFocus={(e) => e.target.select()}
-                                className="h-7 w-32 text-xs"
-                                min={0}
-                                placeholder={lang === "en" ? "Unit cost" : "Costo unit."}
-                              />
-                            </div>
-                          ) : (
-                            <div className="space-y-0.5">
-                              <p className="text-xs text-muted-foreground">
-                                {tr.quantity} {t("unidades")} x {fmtMoneda(tr.unit_cost || 0)}
-                                {tr.reason && ` · ${tReason(tr.reason)}`}
-                              </p>
-                              {tr.notes && (
-                                <p className="text-xs text-muted-foreground/70 flex items-center gap-1">
-                                  <MessageSquare className="w-3 h-3 flex-shrink-0" />
-                                  <span className="italic">{tr.notes}</span>
-                                </p>
+              <Collapsible key={date} open={isOpen} onOpenChange={() => toggleDay(date)}>
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                      <h3 className="text-sm font-semibold text-muted-foreground capitalize">{formatDate(date)}</h3>
+                      <span className="text-xs text-muted-foreground/60">({dayItems.length})</span>
+                    </div>
+                    <span className="text-sm font-bold">{fmtMoneda(dayTotal)}</span>
+                  </button>
+                </CollapsibleTrigger>
+
+                <CollapsibleContent>
+                  <div className="mt-1 rounded-2xl border border-border bg-gradient-to-br from-card to-card/95 overflow-hidden">
+                    <div className="overflow-y-auto max-h-72 divide-y divide-border">
+                      {dayItems.map((tr) => {
+                        const isEditing = editingId === tr.id;
+                        const previewTotal = (parseFloat(editCost) || 0) * (parseInt(editQty) || 0);
+                        return (
+                          <div key={tr.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{tr.product_name}</p>
+                              {isEditing ? (
+                                <div className="flex items-center gap-2 mt-1 flex-wrap">
+                                  <Input
+                                    type="number"
+                                    value={editQty}
+                                    onChange={(e) => setEditQty(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    className="h-7 w-20 text-xs"
+                                    min={1}
+                                    placeholder={t("unidades")}
+                                    autoFocus
+                                  />
+                                  <span className="text-xs text-muted-foreground">x</span>
+                                  <Input
+                                    type="number"
+                                    value={editCost}
+                                    onChange={(e) => setEditCost(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    className="h-7 w-32 text-xs"
+                                    min={0}
+                                    placeholder={lang === "en" ? "Unit cost" : "Costo unit."}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="space-y-0.5">
+                                  <p className="text-xs text-muted-foreground">
+                                    {tr.quantity} {t("unidades")} x {fmtMoneda(tr.unit_cost || 0)}
+                                    {tr.reason && ` · ${tReason(tr.reason)}`}
+                                  </p>
+                                  {tr.notes && (
+                                    <p className="text-xs text-muted-foreground/70 flex items-center gap-1">
+                                      <MessageSquare className="w-3 h-3 flex-shrink-0" />
+                                      <span className="italic">{tr.notes}</span>
+                                    </p>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {isEditing ? (
-                            <>
-                              <span className="text-xs text-muted-foreground">= {fmtMoneda(previewTotal)}</span>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700" onClick={() => confirmEdit(tr)}>
-                                <Check className="w-4 h-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={cancelEdit}>
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <span className="font-bold">{fmtMoneda(getTotal(tr))}</span>
-                              {isAdmin && (
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {isEditing ? (
                                 <>
-                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(tr)}>
-                                    <Pencil className="w-3.5 h-3.5" />
+                                  <span className="text-xs text-muted-foreground">= {fmtMoneda(previewTotal)}</span>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700" onClick={() => confirmEdit(tr)}>
+                                    <Check className="w-4 h-4" />
                                   </Button>
-                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(tr)}>
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={cancelEdit}>
+                                    <X className="w-4 h-4" />
                                   </Button>
                                 </>
+                              ) : (
+                                <>
+                                  <span className="font-bold">{fmtMoneda(getTotal(tr))}</span>
+                                  {isAdmin && (
+                                    <>
+                                      <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(tr)}>
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(tr)}>
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </>
                               )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             );
           })}
         </div>
       )}
 
-      {/* Diálogo de confirmación de eliminación */}
       <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <AlertDialogContent className="max-w-sm">
           <AlertDialogHeader>

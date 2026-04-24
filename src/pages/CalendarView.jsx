@@ -257,7 +257,8 @@ export default function CalendarView() {
               <h4 className="text-sm font-semibold text-muted-foreground mb-2">
                 {t("ventas")} ({selectedSales.length})
               </h4>
-              <div className="rounded-xl border border-border divide-y divide-border overflow-hidden">
+              <div className="rounded-xl border border-border overflow-hidden">
+                <div className="divide-y divide-border overflow-y-auto max-h-72">
                 {selectedSales.map((sale) => (
                   <div key={sale.id} className="p-3 flex items-center justify-between hover:bg-muted/20 transition-colors">
                     <div>
@@ -267,6 +268,7 @@ export default function CalendarView() {
                     <span className="font-bold text-sm">{fmtMoneda(sale.total)}</span>
                   </div>
                 ))}
+                </div>
               </div>
             </div>
           )}

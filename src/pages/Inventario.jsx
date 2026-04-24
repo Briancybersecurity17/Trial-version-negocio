@@ -143,7 +143,7 @@ export default function Inventario() {
           {showTable && (
             <>
               {/* ── MOBILE: tarjetas (< md) ── */}
-              <div className="md:hidden divide-y divide-border">
+              <div className="md:hidden divide-y divide-border overflow-y-auto max-h-[50vh]">
                 {filtered.map((product) => {
                   const valor = getValor(product);
                   const purchaseQty = comprasByProduct[product.id] || 0;
@@ -222,7 +222,7 @@ export default function Inventario() {
               </div>
 
               {/* ── DESKTOP: tabla completa (>= md) ── */}
-              <div className="hidden md:block overflow-x-auto">
+              <div className="hidden md:block overflow-x-auto overflow-y-auto max-h-[50vh]">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-border bg-gradient-to-r from-muted/30 to-muted/20">
@@ -311,7 +311,7 @@ export default function Inventario() {
               </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="overflow-x-auto rounded-2xl border border-secondary/20 bg-secondary/5">
+              <div className="overflow-x-auto overflow-y-auto max-h-64 rounded-2xl border border-secondary/20 bg-secondary/5">
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-left text-muted-foreground border-b border-secondary/20">
@@ -351,7 +351,7 @@ export default function Inventario() {
               </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="divide-y divide-success/10">
+              <div className="divide-y divide-success/10 overflow-y-auto max-h-64">
                 {devoluciones.slice(0, 20).map((tr) => (
                   <div key={tr.id} className="p-4 flex items-center justify-between">
                     <div>
@@ -375,7 +375,7 @@ export default function Inventario() {
               </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="divide-y divide-primary/10">
+              <div className="divide-y divide-primary/10 overflow-y-auto max-h-64">
                 {ajustesInventario.slice(0, 20).map((tr) => (
                   <div key={tr.id} className="p-4 flex items-center justify-between">
                     <div>
@@ -399,7 +399,7 @@ export default function Inventario() {
               </div>
             </AccordionTrigger>
             <AccordionContent>
-              <div className="divide-y divide-warning/10">
+              <div className="divide-y divide-warning/10 overflow-y-auto max-h-64">
                 {otrosMovimientos.slice(0, 20).map((tr) => (
                   <div key={tr.id} className="p-4 flex items-center justify-between">
                     <div>

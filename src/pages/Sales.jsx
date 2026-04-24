@@ -8,7 +8,8 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Search, Receipt, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle, MessageSquare } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Search, Receipt, Calendar as CalendarIcon, Pencil, Check, X, Trash2, AlertTriangle, MessageSquare, ChevronDown } from "lucide-react";
 import moment from "moment";
 import "moment/locale/es";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -28,6 +29,8 @@ export default function Sales() {
   const [editPrice, setEditPrice] = useState("");
   const [editQty, setEditQty] = useState("");
   const [deleteTarget, setDeleteTarget] = useState(null);
+  // openDays: set de fechas abiertas. Por defecto la primera está abierta.
+  const [openDays, setOpenDays] = useState(new Set());
 
   const loadSales = async () => {
     setLoading(true);
@@ -62,6 +65,22 @@ export default function Sales() {
     grouped[date].push(sale);
   });
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+  // Al cargar los datos, abrir el primer día por defecto
+  useEffect(() => {
+    if (sortedDates.length > 0 && openDays.size === 0) {
+      setOpenDays(new Set([sortedDates[0]]));
+    }
+  }, [sortedDates.length]);
+
+  const toggleDay = (date) => {
+    setOpenDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(date)) next.delete(date);
+      else next.add(date);
+      return next;
+    });
+  };
 
   const formatDate = (date) => {
     if (date === "Sin fecha" || date === "No date") return lang === "en" ? "No date" : "Sin fecha";
@@ -155,95 +174,109 @@ export default function Sales() {
           <p className="font-medium">{t("noHayVentas")}</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {sortedDates.map((date) => {
             const dateSales = grouped[date];
             const dateTotal = dateSales.reduce((s, v) => s + (v.total || 0), 0);
+            const isOpen = openDays.has(date);
             return (
-              <div key={date} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-muted-foreground capitalize">{formatDate(date)}</h3>
-                  <span className="text-sm font-bold">{fmtMoneda(dateTotal)}</span>
-                </div>
-                <div className="rounded-2xl border border-border bg-gradient-to-br from-card to-card/95 overflow-hidden divide-y divide-border">
-                  {dateSales.map((sale) => {
-                    const isEditing = editingId === sale.id;
-                    return (
-                      <div key={sale.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{sale.product_name}</p>
-                          {isEditing ? (
-                            <div className="flex items-center gap-2 mt-1">
-                              <Input
-                                type="number"
-                                value={editQty}
-                                onChange={(e) => setEditQty(e.target.value)}
-                                onFocus={(e) => e.target.select()}
-                                className="h-7 w-20 text-xs"
-                                min={1}
-                                autoFocus
-                                placeholder={lang === "en" ? "Qty" : "Cant."}
-                              />
-                              <span className="text-xs text-muted-foreground">x</span>
-                              <Input
-                                type="number"
-                                value={editPrice}
-                                onChange={(e) => setEditPrice(e.target.value)}
-                                onFocus={(e) => e.target.select()}
-                                className="h-7 w-32 text-xs"
-                                min={0}
-                                placeholder={lang === "en" ? "Price" : "Precio"}
-                              />
-                            </div>
-                          ) : (
-                            <div className="space-y-0.5">
-                              <p className="text-xs text-muted-foreground">
-                                {sale.quantity} x {fmtMoneda(sale.unit_price)}
-                              </p>
-                              {sale.notes && (
-                                <p className="text-xs text-muted-foreground/70 flex items-center gap-1">
-                                  <MessageSquare className="w-3 h-3 flex-shrink-0" />
-                                  <span className="italic">{sale.notes}</span>
-                                </p>
+              <Collapsible key={date} open={isOpen} onOpenChange={() => toggleDay(date)}>
+                {/* Cabecera del día — siempre visible */}
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                      <h3 className="text-sm font-semibold text-muted-foreground capitalize">{formatDate(date)}</h3>
+                      <span className="text-xs text-muted-foreground/60">({dateSales.length})</span>
+                    </div>
+                    <span className="text-sm font-bold">{fmtMoneda(dateTotal)}</span>
+                  </button>
+                </CollapsibleTrigger>
+
+                {/* Contenido del día con scroll */}
+                <CollapsibleContent>
+                  <div className="mt-1 rounded-2xl border border-border bg-gradient-to-br from-card to-card/95 overflow-hidden">
+                    <div className="overflow-y-auto max-h-72 divide-y divide-border">
+                      {dateSales.map((sale) => {
+                        const isEditing = editingId === sale.id;
+                        return (
+                          <div key={sale.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{sale.product_name}</p>
+                              {isEditing ? (
+                                <div className="flex items-center gap-2 mt-1">
+                                  <Input
+                                    type="number"
+                                    value={editQty}
+                                    onChange={(e) => setEditQty(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    className="h-7 w-20 text-xs"
+                                    min={1}
+                                    autoFocus
+                                    placeholder={lang === "en" ? "Qty" : "Cant."}
+                                  />
+                                  <span className="text-xs text-muted-foreground">x</span>
+                                  <Input
+                                    type="number"
+                                    value={editPrice}
+                                    onChange={(e) => setEditPrice(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    className="h-7 w-32 text-xs"
+                                    min={0}
+                                    placeholder={lang === "en" ? "Price" : "Precio"}
+                                  />
+                                </div>
+                              ) : (
+                                <div className="space-y-0.5">
+                                  <p className="text-xs text-muted-foreground">
+                                    {sale.quantity} x {fmtMoneda(sale.unit_price)}
+                                  </p>
+                                  {sale.notes && (
+                                    <p className="text-xs text-muted-foreground/70 flex items-center gap-1">
+                                      <MessageSquare className="w-3 h-3 flex-shrink-0" />
+                                      <span className="italic">{sale.notes}</span>
+                                    </p>
+                                  )}
+                                </div>
                               )}
                             </div>
-                          )}
-                        </div>
 
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          {isEditing ? (
-                            <>
-                              <span className="text-xs text-muted-foreground">
-                                = {fmtMoneda((parseFloat(editPrice) || 0) * (parseInt(editQty, 10) || 1))}
-                              </span>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700" onClick={() => confirmEdit(sale)}>
-                                <Check className="w-4 h-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={cancelEdit}>
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <span className="font-bold">{fmtMoneda(sale.total)}</span>
-                              {isAdmin && (
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              {isEditing ? (
                                 <>
-                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(sale)}>
-                                    <Pencil className="w-3.5 h-3.5" />
+                                  <span className="text-xs text-muted-foreground">
+                                    = {fmtMoneda((parseFloat(editPrice) || 0) * (parseInt(editQty, 10) || 1))}
+                                  </span>
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700" onClick={() => confirmEdit(sale)}>
+                                    <Check className="w-4 h-4" />
                                   </Button>
-                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(sale)}>
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={cancelEdit}>
+                                    <X className="w-4 h-4" />
                                   </Button>
                                 </>
+                              ) : (
+                                <>
+                                  <span className="font-bold">{fmtMoneda(sale.total)}</span>
+                                  {isAdmin && (
+                                    <>
+                                      <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(sale)}>
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setDeleteTarget(sale)}>
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </>
                               )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             );
           })}
         </div>

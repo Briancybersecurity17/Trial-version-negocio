@@ -3,7 +3,8 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Trash2, Calendar as CalendarIcon, DollarSign, Pencil, Check, X } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Search, Trash2, Calendar as CalendarIcon, DollarSign, Pencil, Check, X, ChevronDown } from "lucide-react";
 import moment from "moment";
 import "moment/locale/es";
 import { useLanguage } from "@/lib/LanguageContext";
@@ -19,6 +20,7 @@ export default function Mermas() {
   const [dateFilter, setDateFilter] = useState("");
   const [editingId, setEditingId] = useState(null);
   const [editQty, setEditQty] = useState("");
+  const [openDays, setOpenDays] = useState(new Set());
 
   const normalize = (s) => s
     .trim().toLowerCase()
@@ -55,6 +57,21 @@ export default function Mermas() {
     grouped[date].push(tr);
   });
   const sortedDates = Object.keys(grouped).sort((a, b) => b.localeCompare(a));
+
+  useEffect(() => {
+    if (sortedDates.length > 0 && openDays.size === 0) {
+      setOpenDays(new Set([sortedDates[0]]));
+    }
+  }, [sortedDates.length]);
+
+  const toggleDay = (date) => {
+    setOpenDays((prev) => {
+      const next = new Set(prev);
+      if (next.has(date)) next.delete(date);
+      else next.add(date);
+      return next;
+    });
+  };
 
   const formatDate = (date) => {
     if (date === "__nodate__") return lang === "en" ? "No date" : "Sin fecha";
@@ -95,7 +112,7 @@ export default function Mermas() {
       toast.error(lang === "en" ? "Invalid quantity" : "Cantidad invalida");
       return;
     }
-    const diff = (tr.quantity || 0) - newQty; // unidades que vuelven al stock
+    const diff = (tr.quantity || 0) - newQty;
     await base44.entities.InventoryTransaction.update(tr.id, {
       quantity: newQty,
       stock_after: (tr.stock_before || 0) - newQty,
@@ -107,7 +124,6 @@ export default function Mermas() {
   };
 
   const handleDelete = async (tr) => {
-    // Al eliminar, devolver todas las unidades al stock
     await restoreStock(tr, tr.quantity || 0);
     await base44.entities.InventoryTransaction.delete(tr.id);
     toast.success(lang === "en" ? "Waste record deleted" : "Merma eliminada");
@@ -162,82 +178,94 @@ export default function Mermas() {
           <p className="text-sm">{t("mermasHint")}</p>
         </div>
       ) : (
-        <div className="space-y-6">
+        <div className="space-y-3">
           {sortedDates.map((date) => {
             const dayItems = grouped[date];
             const dayUnits = dayItems.reduce((s, tr) => s + (tr.quantity || 0), 0);
             const dayCosto = dayItems.reduce((s, tr) => s + ((tr.unit_cost || 0) * (tr.quantity || 0)), 0);
+            const isOpen = openDays.has(date);
             return (
-              <div key={date} className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-muted-foreground capitalize">{formatDate(date)}</h3>
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground">{fmtMoneda(dayCosto)}</span>
-                    <span className="text-sm font-bold text-destructive">{dayUnits} {t("unidadesLabel")}</span>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-border bg-card overflow-hidden divide-y divide-border">
-                  {dayItems.map((tr) => {
-                    const isEditing = editingId === tr.id;
-                    const previewQty = parseInt(editQty) || 0;
-                    const previewCosto = previewQty * (tr.unit_cost || 0);
-                    return (
-                      <div key={tr.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors gap-4">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-sm">{tr.product_name}</p>
-                          {tr.notes && <p className="text-xs text-muted-foreground mt-0.5">{tr.notes}</p>}
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            {t("costoUnitario")}: {fmtMoneda(tr.unit_cost || 0)}
-                          </p>
-                          {isEditing && (
-                            <div className="flex items-center gap-2 mt-2">
-                              <Input
-                                type="number"
-                                value={editQty}
-                                onChange={(e) => setEditQty(e.target.value)}
-                                onFocus={(e) => e.target.select()}
-                                className="h-7 w-24 text-xs"
-                                min={0}
-                                autoFocus
-                              />
-                              <span className="text-xs text-muted-foreground">
-                                {t("unidadesLabel")} = {fmtMoneda(previewCosto)}
-                              </span>
-                            </div>
-                          )}
-                        </div>
+              <Collapsible key={date} open={isOpen} onOpenChange={() => toggleDay(date)}>
+                <CollapsibleTrigger asChild>
+                  <button className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted/20 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${isOpen ? "rotate-180" : ""}`} />
+                      <h3 className="text-sm font-semibold text-muted-foreground capitalize">{formatDate(date)}</h3>
+                      <span className="text-xs text-muted-foreground/60">({dayItems.length})</span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">{fmtMoneda(dayCosto)}</span>
+                      <span className="text-sm font-bold text-destructive">{dayUnits} {t("unidadesLabel")}</span>
+                    </div>
+                  </button>
+                </CollapsibleTrigger>
 
-                        <div className="flex items-center gap-1 flex-shrink-0">
-                          {isEditing ? (
-                            <>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700" onClick={() => confirmEdit(tr)}>
-                                <Check className="w-4 h-4" />
-                              </Button>
-                              <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={cancelEdit}>
-                                <X className="w-4 h-4" />
-                              </Button>
-                            </>
-                          ) : (
-                            <>
-                              <span className="font-bold text-destructive mr-1">{tr.quantity} {t("unidadesLabel")}</span>
-                              {isAdmin && (
+                <CollapsibleContent>
+                  <div className="mt-1 rounded-2xl border border-border bg-card overflow-hidden">
+                    <div className="overflow-y-auto max-h-72 divide-y divide-border">
+                      {dayItems.map((tr) => {
+                        const isEditing = editingId === tr.id;
+                        const previewQty = parseInt(editQty) || 0;
+                        const previewCosto = previewQty * (tr.unit_cost || 0);
+                        return (
+                          <div key={tr.id} className="p-4 flex items-center justify-between hover:bg-muted/20 transition-colors gap-4">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-medium text-sm">{tr.product_name}</p>
+                              {tr.notes && <p className="text-xs text-muted-foreground mt-0.5">{tr.notes}</p>}
+                              <p className="text-xs text-muted-foreground mt-0.5">
+                                {t("costoUnitario")}: {fmtMoneda(tr.unit_cost || 0)}
+                              </p>
+                              {isEditing && (
+                                <div className="flex items-center gap-2 mt-2">
+                                  <Input
+                                    type="number"
+                                    value={editQty}
+                                    onChange={(e) => setEditQty(e.target.value)}
+                                    onFocus={(e) => e.target.select()}
+                                    className="h-7 w-24 text-xs"
+                                    min={0}
+                                    autoFocus
+                                  />
+                                  <span className="text-xs text-muted-foreground">
+                                    {t("unidadesLabel")} = {fmtMoneda(previewCosto)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex items-center gap-1 flex-shrink-0">
+                              {isEditing ? (
                                 <>
-                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(tr)}>
-                                    <Pencil className="w-3.5 h-3.5" />
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-green-600 hover:text-green-700" onClick={() => confirmEdit(tr)}>
+                                    <Check className="w-4 h-4" />
                                   </Button>
-                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(tr)}>
-                                    <Trash2 className="w-3.5 h-3.5" />
+                                  <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={cancelEdit}>
+                                    <X className="w-4 h-4" />
                                   </Button>
                                 </>
+                              ) : (
+                                <>
+                                  <span className="font-bold text-destructive mr-1">{tr.quantity} {t("unidadesLabel")}</span>
+                                  {isAdmin && (
+                                    <>
+                                      <Button size="icon" variant="ghost" className="h-7 w-7 text-muted-foreground hover:text-foreground" onClick={() => startEdit(tr)}>
+                                        <Pencil className="w-3.5 h-3.5" />
+                                      </Button>
+                                      <Button size="icon" variant="ghost" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => handleDelete(tr)}>
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </Button>
+                                    </>
+                                  )}
+                                </>
                               )}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             );
           })}
         </div>

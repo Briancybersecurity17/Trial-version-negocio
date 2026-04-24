@@ -344,7 +344,8 @@ export default function Dashboard() {
             </div>
           </button>
           {showPurchases && (
-            <div className="px-5 pb-5 space-y-2 border-t border-border/50 pt-3">
+            <div className="px-5 pb-5 border-t border-border/50 pt-3">
+              <div className="overflow-y-auto max-h-56 space-y-2">
               {purchasesToday.map((tr) => (
                 <div key={tr.id} className="flex items-center justify-between text-sm p-2 rounded-lg bg-gradient-to-r from-muted/30 to-muted/20">
                   <div>
@@ -356,6 +357,7 @@ export default function Dashboard() {
                   <span className="font-semibold">{fmtMoneda((tr.total_cost || 0))}</span>
                 </div>
               ))}
+              </div>
             </div>
           )}
         </div>
@@ -373,10 +375,12 @@ export default function Dashboard() {
           <p className="text-sm">{t("agregarDesdeProductos")}</p>
         </div>
       ) : (
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filtered.map((product) => (
-            <ProductCard key={product.id} product={product} onSell={setSaleProduct} onInventory={setInvProduct} />
-          ))}
+        <div className="overflow-y-auto max-h-[60vh] pr-1">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+            {filtered.map((product) => (
+              <ProductCard key={product.id} product={product} onSell={setSaleProduct} onInventory={setInvProduct} />
+            ))}
+          </div>
         </div>
       )}
 

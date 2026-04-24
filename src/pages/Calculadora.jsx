@@ -3,7 +3,8 @@ import { useState, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Search, Calculator, TrendingUp, RotateCcw } from "lucide-react";
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from "@/components/ui/collapsible";
+import { Search, Calculator, TrendingUp, RotateCcw, ChevronDown } from "lucide-react";
 import { useLanguage } from "@/lib/LanguageContext";
 import { useTheme } from "@/lib/ThemeContext";
 
@@ -24,6 +25,7 @@ export default function Calculadora() {
   const [loading, setLoading]     = useState(true);
   const [search, setSearch]       = useState("");
   const [globalPct, setGlobalPct] = useState("");
+  const [tableOpen, setTableOpen] = useState(true);
 
   // { [product_id]: string } — valor del input de cada producto
   const [overrides, setOverrides] = useState({});
@@ -207,85 +209,104 @@ export default function Calculadora() {
       {filtered.length === 0 ? (
         <div className="text-center py-16 text-muted-foreground text-sm">{tx.noProducts}</div>
       ) : (
-        <div className="rounded-xl border border-border overflow-hidden">
-          <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-5 py-3 bg-muted/50 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-            <span>{lang === "en" ? "Product" : "Producto"}</span>
-            <span className="text-right">{tx.cost}</span>
-            <span className="text-right">{tx.curPrice}</span>
-            <span className="text-center">{tx.pctLabel}</span>
-            <span className="text-right">{tx.suggested}</span>
-          </div>
+        <Collapsible open={tableOpen} onOpenChange={setTableOpen}>
+          {/* Cabecera colapsable */}
+          <CollapsibleTrigger asChild>
+            <button className="w-full flex items-center justify-between px-4 py-3 rounded-xl border border-border bg-card hover:bg-muted/20 transition-colors mb-1">
+              <div className="flex items-center gap-2">
+                <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform duration-200 ${tableOpen ? "rotate-180" : ""}`} />
+                <span className="text-sm font-semibold">
+                  {lang === "en" ? "Products" : "Productos"} ({filtered.length})
+                </span>
+              </div>
+              <span className="text-xs text-muted-foreground">
+                {tableOpen ? (lang === "en" ? "Collapse" : "Colapsar") : (lang === "en" ? "Expand" : "Expandir")}
+              </span>
+            </button>
+          </CollapsibleTrigger>
 
-          <div className="divide-y divide-border">
-            {filtered.map((product) => {
-              const cost      = product.cost  || 0;
-              const curPrice  = product.price || 0;
-              const rawPct    = overrides[product.id] ?? "";
-              const pct       = rawPct === "" ? null : parseFloat(rawPct);
-              const suggested = calcSuggested(cost, pct);
-              const gain      = suggested !== null ? suggested - cost : null;
-              const valid     = pct !== null && !isNaN(pct) && pct >= 0;
+          <CollapsibleContent>
+            <div className="rounded-xl border border-border overflow-hidden">
+              <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-4 px-5 py-3 bg-muted/50 border-b border-border text-xs font-semibold text-muted-foreground uppercase tracking-wide sticky top-0 z-10">
+                <span>{lang === "en" ? "Product" : "Producto"}</span>
+                <span className="text-right">{tx.cost}</span>
+                <span className="text-right">{tx.curPrice}</span>
+                <span className="text-center">{tx.pctLabel}</span>
+                <span className="text-right">{tx.suggested}</span>
+              </div>
 
-              return (
-                <div
-                  key={product.id}
-                  className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 md:gap-4 px-5 py-4 items-center hover:bg-muted/30 transition-colors"
-                >
-                  <div className="flex flex-col gap-0.5">
-                    <span className="font-medium text-foreground text-sm leading-tight">{product.name}</span>
-                    {product.sku      && <span className="text-xs text-muted-foreground">{product.sku}</span>}
-                    {product.category && <span className="text-xs text-muted-foreground/70">{tCat(product.category)}</span>}
-                  </div>
+              <div className="divide-y divide-border overflow-y-auto max-h-[55vh]">
+                {filtered.map((product) => {
+                  const cost      = product.cost  || 0;
+                  const curPrice  = product.price || 0;
+                  const rawPct    = overrides[product.id] ?? "";
+                  const pct       = rawPct === "" ? null : parseFloat(rawPct);
+                  const suggested = calcSuggested(cost, pct);
+                  const gain      = suggested !== null ? suggested - cost : null;
+                  const valid     = pct !== null && !isNaN(pct) && pct >= 0;
 
-                  <div className="flex md:justify-end items-center gap-1">
-                    <span className="text-xs text-muted-foreground md:hidden">{tx.cost}:</span>
-                    {cost > 0
-                      ? <span className="text-sm font-mono text-foreground">{fmtExacto(cost)}</span>
-                      : <span className="text-xs text-muted-foreground italic">{tx.noCost}</span>
-                    }
-                  </div>
-
-                  <div className="flex md:justify-end items-center gap-1">
-                    <span className="text-xs text-muted-foreground md:hidden">{tx.curPrice}:</span>
-                    <span className="text-sm font-mono text-muted-foreground">{fmtExacto(curPrice)}</span>
-                  </div>
-
-                  <div className="flex md:justify-center items-center gap-1">
-                    <span className="text-xs text-muted-foreground md:hidden">{tx.pctLabel}:</span>
-                    <div className="relative w-24">
-                      <Input
-                        type="number"
-                        min="0"
-                        className="pr-6 text-center text-sm h-8"
-                        placeholder={tx.pctPh}
-                        value={rawPct}
-                        onChange={(e) => handleOverrideChange(product.id, e.target.value)}
-                        disabled={cost <= 0}
-                      />
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
-                    </div>
-                  </div>
-
-                  <div className="flex md:justify-end items-center gap-2 md:gap-1 flex-wrap">
-                    <span className="text-xs text-muted-foreground md:hidden">{tx.suggested}:</span>
-                    {valid && suggested !== null ? (
-                      <div className="flex flex-col items-end gap-0.5">
-                        <span className="text-sm font-bold font-mono" style={{ color: themeFrom }}>
-                          {fmtExacto(suggested)}
-                        </span>
-                        <span className="text-xs text-muted-foreground">
-                          +{fmtExacto(gain)} {tx.profit.toLowerCase()}
-                        </span>
+                  return (
+                    <div
+                      key={product.id}
+                      className="grid grid-cols-1 md:grid-cols-[2fr_1fr_1fr_1fr_1fr] gap-3 md:gap-4 px-5 py-4 items-center hover:bg-muted/30 transition-colors"
+                    >
+                      <div className="flex flex-col gap-0.5">
+                        <span className="font-medium text-foreground text-sm leading-tight">{product.name}</span>
+                        {product.sku      && <span className="text-xs text-muted-foreground">{product.sku}</span>}
+                        {product.category && <span className="text-xs text-muted-foreground/70">{tCat(product.category)}</span>}
                       </div>
-                    ) : (
-                      <span className="text-sm text-muted-foreground/40">—</span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+
+                      <div className="flex md:justify-end items-center gap-1">
+                        <span className="text-xs text-muted-foreground md:hidden">{tx.cost}:</span>
+                        {cost > 0
+                          ? <span className="text-sm font-mono text-foreground">{fmtExacto(cost)}</span>
+                          : <span className="text-xs text-muted-foreground italic">{tx.noCost}</span>
+                        }
+                      </div>
+
+                      <div className="flex md:justify-end items-center gap-1">
+                        <span className="text-xs text-muted-foreground md:hidden">{tx.curPrice}:</span>
+                        <span className="text-sm font-mono text-muted-foreground">{fmtExacto(curPrice)}</span>
+                      </div>
+
+                      <div className="flex md:justify-center items-center gap-1">
+                        <span className="text-xs text-muted-foreground md:hidden">{tx.pctLabel}:</span>
+                        <div className="relative w-24">
+                          <Input
+                            type="number"
+                            min="0"
+                            className="pr-6 text-center text-sm h-8"
+                            placeholder={tx.pctPh}
+                            value={rawPct}
+                            onChange={(e) => handleOverrideChange(product.id, e.target.value)}
+                            disabled={cost <= 0}
+                          />
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground pointer-events-none">%</span>
+                        </div>
+                      </div>
+
+                      <div className="flex md:justify-end items-center gap-2 md:gap-1 flex-wrap">
+                        <span className="text-xs text-muted-foreground md:hidden">{tx.suggested}:</span>
+                        {valid && suggested !== null ? (
+                          <div className="flex flex-col items-end gap-0.5">
+                            <span className="text-sm font-bold font-mono" style={{ color: themeFrom }}>
+                              {fmtExacto(suggested)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">
+                              +{fmtExacto(gain)} {tx.profit.toLowerCase()}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground/40">—</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </CollapsibleContent>
+        </Collapsible>
       )}
     </div>
   );

@@ -12,7 +12,7 @@ Entrá a la sección [**Releases**](https://github.com/Briancybersecurity17/Tria
 |---|---|
 | `Mi.Negocio.Setup.2.0.0.exe` | Instalador para Windows (recomendado) |
 | `Mi.Negocio.2.0.0.exe` | Versión portable — no requiere instalación |
-Linux --- en pruebas todavia
+Linux | en pruebas todavia
 
 > ⚠️ Esta versión incluye un **período de prueba gratuita de 2 días** con acceso completo a todas las funciones.
 

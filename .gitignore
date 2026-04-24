@@ -36,3 +36,9 @@ win-unpacked/
 
 # Vite cache
 .vite/
+
+# Archivo de integridad (firmado con clave secreta)
+electron/.integrity
+
+# excluir obfuscate.js
+obfuscate.js

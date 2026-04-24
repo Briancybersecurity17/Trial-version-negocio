@@ -6,12 +6,12 @@
 
 ## ⬇️ Descarga
 
-Entrá a la sección [**Releases**](https://github.com/Briancybersecurity17/Trial-version-negocio/releases/tag/v1.0.0) y descargá el archivo que prefieras:
+Entrá a la sección [**Releases**](https://github.com/Briancybersecurity17/Trial-version-negocio/releases/tag/v2.0.0) y descargá el archivo que prefieras:
 
 | Archivo | Descripción |
 |---|---|
-| `Mi.Negocio.Trial.Setup.1.0.0.exe` | Instalador (recomendado) |
-| `Mi.Negocio.Trial.1.0.0.exe` | Versión portable, no requiere instalación |
+| `Mi.Negocio.Trial.Setup.2.0.0.exe` | Instalador (recomendado) |
+| `Mi.Negocio.Trial.2.0.0.exe` | Versión portable, no requiere instalación |
 
 > ⚠️ Esta versión tiene **2 días de prueba gratuita** desde la primera ejecución, con acceso completo a todas las funciones.
 
@@ -60,3 +60,4 @@ Contactame por email con el asunto **Compra app**:
 **Brian Almada**
 📧 brianalmada14@gmail.com
 🐙 [github.com/Briancybersecurity17](https://github.com/Briancybersecurity17)
+© 2026 Brian Almada. Todos los derechos reservados. No se permite redistribución sin autorización.

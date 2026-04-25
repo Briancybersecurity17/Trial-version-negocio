@@ -130,7 +130,7 @@ export default function Login() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
             <Sparkles style={{ width: 12, height: 12, color: from, opacity: 0.7 }} />
             <p style={{ fontSize: 13, color: 'var(--muted-foreground)', margin: 0 }}>
-              {businessName} · Punto de Venta
+              {businessName} · Que tengas un gran día!
             </p>
             <Sparkles style={{ width: 12, height: 12, color: to, opacity: 0.7 }} />
           </div>
@@ -271,7 +271,7 @@ export default function Login() {
           textAlign: 'center', fontSize: 11,
           color: 'var(--muted-foreground)', opacity: 0.35, marginTop: 20,
         }}>
-          App Mi Negocio v2.0.0
+          App Mi Negocio v2.0.1
         </p>
       </div>
 

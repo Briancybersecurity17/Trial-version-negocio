@@ -685,11 +685,11 @@ export default function Opciones() {
                   : (lang === "en" ? "Download Excel backup" : "Descargar backup Excel")}
               </button>
             </div>
-            <div className="border-t border-border pt-3 flex gap-3">
-              <Button variant="outline" className="flex-1" onClick={() => setShowBackupPrompt(false)}>
+            <div className="border-t border-border pt-3 flex flex-col sm:flex-row gap-2 sm:gap-3">
+              <Button variant="outline" className="w-full sm:flex-1" onClick={() => setShowBackupPrompt(false)}>
                 {lang === "en" ? "Cancel" : "Cancelar"}
               </Button>
-              <Button variant="destructive" className="flex-1" onClick={handleConfirmReset} disabled={resetting}>
+              <Button variant="destructive" className="w-full sm:flex-1" onClick={handleConfirmReset} disabled={resetting}>
                 <Trash2 className="w-4 h-4 mr-2" />
                 {lang === "en" ? "Reset anyway" : "Ya hice el backup, reiniciar"}
               </Button>

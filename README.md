@@ -82,7 +82,7 @@ Borrá todos los datos y comenzá desde cero cuando lo necesitás.
 
 ## 🔒 Período de Prueba
 
-Al ejecutar la app por primera vez comienza automáticamente el período de prueba de **2 días**. Durante ese tiempo tenés acceso completo a todas las funciones.
+Al ejecutar la app por primera vez comienza automáticamente el período de prueba de **2 horas**. Durante ese tiempo tenés acceso completo a todas las funciones.
 
 - Al vencer el trial, la app muestra una pantalla de bloqueo con los datos de contacto para adquirir la licencia.
 - El trial está vinculado al equipo donde se instala — **no se resetea** desinstalando y reinstalando.

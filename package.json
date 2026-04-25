@@ -2,7 +2,7 @@
   "name": "mi-negocio-desktop",
   "productName": "Mi Negocio",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Sistema de gestión para negocios y kioscos",
   "Author": "Brian Almada, Contacto: brian.almada14@gmail.com",
   "type": "commonjs",

@@ -10,8 +10,8 @@ Entrá a la sección [**Releases**](https://github.com/Briancybersecurity17/Tria
 
 | Archivo | Descripción |
 |---|---|
-| `Mi.Negocio.Setup.2.0.0.exe` | Instalador para Windows (recomendado) |
-| `Mi.Negocio.2.0.0.exe` | Versión portable — no requiere instalación |
+| `Mi.Negocio.Setup.2.0.1.exe` | Instalador para Windows (recomendado) |
+| `Mi.Negocio.2.0.1.exe` | Versión portable — no requiere instalación |
 Linux | En fase de pruebas
 
 > ⚠️ Esta versión incluye un **período de prueba gratuita de 2 horas** con acceso completo a todas las funciones.
@@ -72,12 +72,13 @@ Borrá todos los datos y comenzá desde cero cuando lo necesitás.
 ## 🚀 Instalación
 
 ### Windows — Instalador (recomendado)
-1. Descargá `Mi.Negocio.Setup.2.0.0.exe`.
+
+1. Descargá `Mi.Negocio.Setup.2.0.1.exe`.
 2. Ejecutalo y seguí el asistente de instalación.
 3. Al finalizar, el acceso directo se crea en el escritorio y en el menú de inicio.
 
 ### Windows — Portable
-1. Descargá `Mi.Negocio.2.0.0.exe`.
+1. Descargá `Mi.Negocio.2.0.1.exe`.
 2. Ejecutalo directamente — no requiere instalación. Buena opción si solo quieres probar la app
 
 ## 🔒 Período de Prueba

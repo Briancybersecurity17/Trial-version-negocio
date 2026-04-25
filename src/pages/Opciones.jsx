@@ -685,14 +685,21 @@ export default function Opciones() {
                   : (lang === "en" ? "Download Excel backup" : "Descargar backup Excel")}
               </button>
             </div>
-            <div className="border-t border-border pt-3 flex flex-col sm:flex-row gap-2 sm:gap-3">
-              <Button variant="outline" className="w-full sm:flex-1" onClick={() => setShowBackupPrompt(false)}>
+            <div className="border-t border-border pt-3 flex flex-col gap-2">
+              <button
+                onClick={() => setShowBackupPrompt(false)}
+                className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 border border-border bg-muted hover:bg-muted/70 transition-all"
+              >
                 {lang === "en" ? "Cancel" : "Cancelar"}
-              </Button>
-              <Button variant="destructive" className="w-full sm:flex-1" onClick={handleConfirmReset} disabled={resetting}>
-                <Trash2 className="w-4 h-4 mr-2" />
+              </button>
+              <button
+                onClick={handleConfirmReset}
+                disabled={resetting}
+                className="w-full py-2.5 px-4 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 bg-destructive text-destructive-foreground hover:bg-destructive/90 transition-all disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4 shrink-0" />
                 {lang === "en" ? "Reset anyway" : "Ya hice el backup, reiniciar"}
-              </Button>
+              </button>
             </div>
           </div>
         </div>

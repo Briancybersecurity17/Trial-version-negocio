@@ -14,7 +14,7 @@ Entrá a la sección [**Releases**](https://github.com/Briancybersecurity17/Tria
 | `Mi.Negocio.2.0.0.exe` | Versión portable — no requiere instalación |
 Linux | en pruebas todavia
 
-> ⚠️ Esta versión incluye un **período de prueba gratuita de 2 días** con acceso completo a todas las funciones.
+> ⚠️ Esta versión incluye un **período de prueba gratuita de 2 horas** con acceso completo a todas las funciones.
 
 ---
 
@@ -82,7 +82,7 @@ Borrá todos los datos y comenzá desde cero cuando lo necesitás.
 
 ## 🔒 Período de Prueba
 
-Al ejecutar la app por primera vez comienza automáticamente el período de prueba de **2 días**. Durante ese tiempo tenés acceso completo a todas las funciones.
+Al ejecutar la app por primera vez comienza automáticamente el período de prueba de **2 horas**. Durante ese tiempo tenés acceso completo a todas las funciones.
 
 - Al vencer el trial, la app muestra una pantalla de bloqueo con los datos de contacto para adquirir la licencia.
 - El trial está vinculado al equipo donde se instala — **no se resetea** desinstalando y reinstalando.

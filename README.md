@@ -73,12 +73,12 @@ Borrá todos los datos y comenzá desde cero cuando lo necesitás.
 
 ### Windows — Instalador (recomendado)
 
-1. Descargá `Mi.Negocio.Setup.2.0.1.exe`.
+1. Descargá `Mi.Negocio.Setup.2.0.2.exe`.
 2. Ejecutalo y seguí el asistente de instalación.
 3. Al finalizar, el acceso directo se crea en el escritorio y en el menú de inicio.
 
 ### Windows — Portable
-1. Descargá `Mi.Negocio.2.0.1.exe`.
+1. Descargá `Mi.Negocio.2.0.2.exe`.
 2. Ejecutalo directamente — no requiere instalación. Buena opción si solo quieres probar la app
 
 ## 🔒 Período de Prueba

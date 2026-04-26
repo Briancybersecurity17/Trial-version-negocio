@@ -1,4 +1,5 @@
 import { fmtMoneda, fmtExacto } from "@/utils/currency";
+import { getLimits } from "@/lib/limits";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -22,8 +23,8 @@ export default function Inventario() {
       setLoading(true);
       try {
         const [prods, txs] = await Promise.all([
-          base44.entities.Product.list("-updated_date", 2000),
-          base44.entities.InventoryTransaction.list("-transaction_date", 5000),
+          base44.entities.Product.list("-updated_date", getLimits().heavy),
+          base44.entities.InventoryTransaction.list("-transaction_date", getLimits().heavy),
         ]);
         setProducts(prods);
         setTransactions(txs);
@@ -70,8 +71,42 @@ export default function Inventario() {
   const totalInventario = filtered.reduce((s, p) => s + getValor(p), 0);
 
   if (loading) return (
-    <div className="flex items-center justify-center h-[60vh]">
-      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+    <div className="p-4 lg:p-8 space-y-6 max-w-5xl mx-auto animate-pulse">
+      {/* Header skeleton */}
+      <div className="space-y-2">
+        <div className="h-8 w-48 rounded-xl bg-muted" />
+        <div className="h-4 w-72 rounded-lg bg-muted/70" />
+      </div>
+      {/* Search skeleton */}
+      <div className="h-10 w-full rounded-xl bg-muted" />
+      {/* Stats skeleton */}
+      <div className="grid grid-cols-1 sm:grid-cols-5 gap-4">
+        <div className="h-20 rounded-xl bg-muted sm:col-span-2" />
+        <div className="h-20 rounded-xl bg-muted" />
+        <div className="h-20 rounded-xl bg-muted" />
+        <div className="h-20 rounded-xl bg-muted" />
+      </div>
+      {/* Rows skeleton */}
+      <div className="rounded-2xl border border-border overflow-hidden">
+        <div className="h-12 bg-muted/60 border-b border-border" />
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-border/50">
+            <div className="h-10 w-10 rounded-xl bg-muted shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <div className="h-3.5 w-40 rounded bg-muted" />
+              <div className="h-3 w-24 rounded bg-muted/60" />
+            </div>
+            <div className="h-3.5 w-16 rounded bg-muted" />
+            <div className="h-3.5 w-16 rounded bg-muted" />
+            <div className="h-3.5 w-20 rounded bg-muted" />
+          </div>
+        ))}
+      </div>
+      {/* Loading hint */}
+      <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+        <div className="w-4 h-4 border-2 border-muted border-t-primary rounded-full animate-spin" />
+        <span>{lang === "en" ? "Loading up to " + getLimits().heavy.toLocaleString() + " records…" : "Cargando hasta " + getLimits().heavy.toLocaleString() + " registros…"}</span>
+      </div>
     </div>
   );
 

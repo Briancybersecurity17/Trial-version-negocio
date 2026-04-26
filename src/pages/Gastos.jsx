@@ -1,4 +1,5 @@
 import { fmtMoneda } from "@/utils/currency";
+import { getLimits } from "@/lib/limits";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
@@ -33,7 +34,7 @@ export default function Gastos() {
 
   const loadTransactions = async () => {
     setLoading(true);
-    const all = await base44.entities.InventoryTransaction.list("-transaction_date", 1000);
+    const all = await base44.entities.InventoryTransaction.list("-transaction_date", getLimits().heavy);
     setTransactions(all);
     setLoading(false);
   };

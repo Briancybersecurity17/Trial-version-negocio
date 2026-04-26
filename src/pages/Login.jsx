@@ -271,7 +271,7 @@ export default function Login() {
           textAlign: 'center', fontSize: 11,
           color: 'var(--muted-foreground)', opacity: 0.35, marginTop: 20,
         }}>
-          App Mi Negocio v2.0.1
+          App Mi Negocio v2.0.2
         </p>
       </div>
 

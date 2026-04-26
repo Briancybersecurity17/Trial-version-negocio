@@ -1,4 +1,5 @@
 import { fmtExacto } from "@/utils/currency";
+import { getLimits } from "@/lib/limits";
 import { useState, useEffect, useRef, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { Input } from "@/components/ui/input";
@@ -59,8 +60,8 @@ export default function Calculadora() {
     (async () => {
       setLoading(true);
       const [prods, markups] = await Promise.all([
-        base44.entities.Product.list("-updated_date", 500),
-        base44.entities.PriceMarkup.list(null, 500),
+        base44.entities.Product.list("-updated_date", getLimits().products),
+        base44.entities.PriceMarkup.list(null, getLimits().products),
       ]);
       setProducts(prods);
 

@@ -4,7 +4,9 @@ import { toast } from "sonner";
 import { useLanguage, DEFAULT_CATEGORY_KEYS } from "@/lib/LanguageContext";
 import { useTheme, THEMES } from "@/lib/ThemeContext";
 import { useAuth } from "@/lib/AuthContext";
-import { Settings, Languages, Download, Trash2, AlertTriangle, CheckCircle, Palette, HardDrive, Tag, Plus, Pencil, X, Check, ChevronDown, RotateCcw, Moon, Sun, Store } from "lucide-react";
+import { getLimits, setActiveProfile, getActiveProfile, PROFILES } from "@/lib/limits";
+import { fetchSettings, saveSettings } from "@/lib/LanguageContext";
+import { Settings, Languages, Download, Trash2, AlertTriangle, CheckCircle, Palette, HardDrive, Tag, Plus, Pencil, X, Check, ChevronDown, RotateCcw, Moon, Sun, Store, Gauge } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
@@ -20,6 +22,20 @@ export default function Opciones() {
   const [resetting, setResetting] = useState(false);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [showTheme, setShowTheme] = useState(false);
+
+  // ── Perfil de rendimiento ──────────────────────────────────────────────────
+  const [activeProfile, setProfile] = useState(() => getActiveProfile());
+  const handleSetProfile = async (key) => {
+    setActiveProfile(key);
+    setProfile(key);
+    try {
+      const current = await fetchSettings();
+      await saveSettings({ ...current, performanceProfile: key });
+    } catch (e) {
+      console.warn('No se pudo sincronizar el perfil de rendimiento:', e);
+    }
+    toast.success(lang === 'en' ? 'Performance profile saved' : 'Perfil de rendimiento guardado');
+  };
 
   // ── Nombre del negocio ─────────────────────────────────────────────────────
   const [businessName, setBusinessName] = useState(
@@ -440,6 +456,80 @@ export default function Opciones() {
         <p className="text-xs text-muted-foreground">
           {lang === 'en' ? 'Current:' : 'Actual:'}{' '}
           <span className="font-semibold" style={{ color: currentTheme?.from }}>{businessName}</span>
+        </p>
+      </div>
+
+      {/* Rendimiento */}
+      <div className="rounded-2xl border border-border bg-card p-6 space-y-4">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ background: currentTheme?.heroGradient }}>
+            <Gauge className="w-5 h-5 text-white" />
+          </div>
+          <div>
+            <h2 className="font-semibold text-base">
+              {lang === 'en' ? 'Performance Profile' : 'Perfil de Rendimiento'}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              {lang === 'en'
+                ? 'Set how many records load across the app'
+                : 'Definí cuántos registros se cargan en la app'}
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          {Object.entries(PROFILES).map(([key, profile]) => {
+            const isActive = activeProfile === key;
+            const icons = { small: '🏪', medium: '🏬', large: '🏭', wholesale: '🏗️' };
+            return (
+              <button
+                key={key}
+                onClick={() => handleSetProfile(key)}
+                className={`relative rounded-xl border-2 p-4 text-left transition-all duration-200 ${
+                  isActive
+                    ? 'shadow-md scale-[1.02]'
+                    : 'border-border hover:border-primary/40 hover:shadow-sm'
+                }`}
+                style={isActive ? { borderColor: currentTheme?.from, boxShadow: `0 4px 16px ${currentTheme?.from}30` } : {}}
+              >
+                {isActive && (
+                  <span
+                    className="absolute top-2 right-2 text-xs font-semibold px-2 py-0.5 rounded-full text-white"
+                    style={{ background: currentTheme?.heroGradient }}
+                  >
+                    {lang === 'en' ? 'Active' : 'Activo'}
+                  </span>
+                )}
+                <div className="text-2xl mb-2">{icons[key]}</div>
+                <p className="font-semibold text-sm">
+                  {lang === 'en' ? profile.label.en : profile.label.es}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {lang === 'en' ? profile.hint.en : profile.hint.es}
+                </p>
+                <div className="mt-3 pt-3 border-t border-border/60 space-y-1">
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{lang === 'en' ? 'Dashboard' : 'Dashboard'}</span>
+                    <span className="font-medium">{profile.dashboard.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{lang === 'en' ? 'Products' : 'Productos'}</span>
+                    <span className="font-medium">{profile.products.toLocaleString()}</span>
+                  </div>
+                  <div className="flex justify-between text-xs">
+                    <span className="text-muted-foreground">{lang === 'en' ? 'Inventory' : 'Inventario'}</span>
+                    <span className="font-medium">{profile.heavy.toLocaleString()}</span>
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          💡 {lang === 'en'
+            ? 'Changes apply the next time each section loads.'
+            : 'Los cambios se aplican la próxima vez que se cargue cada sección.'}
         </p>
       </div>
 

@@ -1,4 +1,5 @@
 import { fmtMoneda } from "@/utils/currency";
+import { getLimits } from "@/lib/limits";
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -31,7 +32,7 @@ export default function Products() {
   const loadProducts = async () => {
     setLoading(true);
     try {
-      const prods = await base44.entities.Product.list("-updated_date", 500);
+      const prods = await base44.entities.Product.list("-updated_date", getLimits().products);
       setProducts(prods);
     } catch (e) {
       toast.error(lang === "en" ? "Error loading products" : "Error al cargar los productos");

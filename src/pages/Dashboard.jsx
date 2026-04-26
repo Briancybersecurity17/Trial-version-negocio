@@ -1,4 +1,5 @@
 import { fmtMoneda, fmtExacto } from "@/utils/currency";
+import { getLimits } from "@/lib/limits";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
 import { toast } from "sonner";
@@ -80,7 +81,7 @@ export default function Dashboard() {
     setLoading(true);
 
     const [prods, registers, sales, purchases] = await Promise.all([
-      base44.entities.Product.list("-updated_date", 200),
+      base44.entities.Product.list("-updated_date", getLimits().dashboard), // muestra 
       base44.entities.CashRegister.filter({ date: today }),
       base44.entities.CashSale.filter({ sale_date: today }, "-created_date", 500),
       base44.entities.InventoryTransaction.filter(

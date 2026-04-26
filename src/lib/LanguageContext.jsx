@@ -53,12 +53,15 @@ export const REASONS_ENTRADA_KEYS = ["Compra/Reabastecimiento", "Devolución", "
 export const REASONS_SALIDA_KEYS = ["Merma/Desperdicio", "Ajuste de inventario", "Otro"];
 
 // ─── Settings helpers ─────────────────────────────────────────────────────────
-async function fetchSettings() {
+export async function fetchSettings() {
   try {
     if (typeof window !== "undefined" && window.electronSettings) {
       return await window.electronSettings.get();
     }
-    const res = await fetch("/api/settings/get");
+    const token = localStorage.getItem("auth_token") || "";
+    const res = await fetch("/api/settings/get", {
+      headers: { Authorization: "Bearer " + token },
+    });
     if (!res.ok) return {};
     return await res.json();
   } catch {
@@ -66,15 +69,19 @@ async function fetchSettings() {
   }
 }
 
-async function saveSettings(data) {
+export async function saveSettings(data) {
   try {
     if (typeof window !== "undefined" && window.electronSettings) {
       await window.electronSettings.set(data);
       return;
     }
+    const token = localStorage.getItem("auth_token") || "";
     await fetch("/api/settings/set", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
       body: JSON.stringify(data),
     });
   } catch (e) {
@@ -310,6 +317,10 @@ export function LanguageProvider({ children }) {
       setCategoryLabels(labels);
       CATEGORY_KEYS = keys;
       CATEGORY_LABELS = labels;
+      // Sync performance profile from backend to localStorage
+      if (settings.performanceProfile) {
+        localStorage.setItem("performanceProfile", settings.performanceProfile);
+      }
       setSettingsLoaded(true);
     });
   }, []);
